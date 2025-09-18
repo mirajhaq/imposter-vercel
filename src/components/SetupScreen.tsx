@@ -74,7 +74,7 @@ export default function SetupScreen({
               fontSize: '1.125rem',
               fontWeight: '700',
               padding: '1rem 3rem',
-              backgroundColor: '#df7436ff',
+              backgroundColor: '#93fa73ff',
               color: 'white',
               borderRadius: '0.5rem',
               border: 'none',
