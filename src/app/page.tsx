@@ -12,49 +12,51 @@ export default function Home() {
   const [imposterGetsHint, setImposterGetsHint] = useState(true)
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      {game.step === 'setup' && (
-        <SetupScreen
-          numPlayers={game.numPlayers}
-          setNumPlayers={game.setNumPlayers}
-          localNames={game.localNames}
-          setLocalNames={game.setLocalNames}
-          allThemes={game.allThemes}
-          selectedThemes={game.selectedThemes}
-          toggleTheme={game.toggleTheme}
-          startGame={game.startGame}
-          imposterGetsHint={imposterGetsHint}
-          setImposterGetsHint={setImposterGetsHint}
-        />
-      )}
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-gray-100">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-md p-4 sm:p-6 md:p-8">
+        {game.step === 'setup' && (
+          <SetupScreen
+            numPlayers={game.numPlayers}
+            setNumPlayers={game.setNumPlayers}
+            localNames={game.localNames}
+            setLocalNames={game.setLocalNames}
+            allThemes={game.allThemes}
+            selectedThemes={game.selectedThemes}
+            toggleTheme={game.toggleTheme}
+            startGame={game.startGame}
+            imposterGetsHint={imposterGetsHint}
+            setImposterGetsHint={setImposterGetsHint}
+          />
+        )}
 
-      {game.step === 'reveal' && game.players.length > 0 && (
-        <PlayerReveal
-          key={game.players[game.currentRevealIndex].id}
-          name={game.players[game.currentRevealIndex].name}
-          isImposter={game.players[game.currentRevealIndex].role === 'imposter'}
-          secret={game.wordPair.secret}
-          hint={imposterGetsHint ? game.wordPair.hint : ''}
-          onDone={game.doneReveal}
-          isLastPlayer={game.currentRevealIndex === game.players.length - 1}
-        />
-      )}
+        {game.step === 'reveal' && game.players.length > 0 && (
+          <PlayerReveal
+            key={game.players[game.currentRevealIndex].id}
+            name={game.players[game.currentRevealIndex].name}
+            isImposter={game.players[game.currentRevealIndex].role === 'imposter'}
+            secret={game.wordPair.secret}
+            hint={imposterGetsHint ? game.wordPair.hint : ''}
+            onDone={game.doneReveal}
+            isLastPlayer={game.currentRevealIndex === game.players.length - 1}
+          />
+        )}
 
-      {game.step === 'play' && (
-        <PlayScreen
-          players={game.players}
-          startingPlayerIndex={game.startingPlayerIndex}
-          setStep={game.setStep}
-        />
-      )}
+        {game.step === 'play' && (
+          <PlayScreen
+            players={game.players}
+            startingPlayerIndex={game.startingPlayerIndex}
+            setStep={game.setStep}
+          />
+        )}
 
-      {game.step === 'complete' && (
-        <GameResults
-          wordPair={game.wordPair}
-          players={game.players}
-          resetToSetup={game.resetToSetup}
-        />
-      )}
+        {game.step === 'complete' && (
+          <GameResults
+            wordPair={game.wordPair}
+            players={game.players}
+            resetToSetup={game.resetToSetup}
+          />
+        )}
+      </div>
     </div>
   )
 }
