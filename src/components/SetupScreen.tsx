@@ -1,10 +1,10 @@
+// src/components/SetupScreen.tsx
 import React, { useState } from 'react'
 import PlayerTile from './PlayerTile'
 import PlayerEditorModal from './PlayerEditorModal'
 import ThemeTile from './ThemeTile'
 import ThemeEditorModal from './ThemeEditorModal'
 import ImposterHintToggle from './ImposterHintToggle'
-import ThemeSelector from './ThemeSelector'
 
 type SetupScreenProps = {
   numPlayers: number
@@ -35,23 +35,27 @@ export default function SetupScreen({
   const [showThemeEditor, setShowThemeEditor] = useState(false)
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #fcf9f8ff 0%, #e2e8f0 100%)', padding: '2rem 1rem' }}>
-      <div style={{ maxWidth: '64rem', margin: '0 auto' }}>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-gray-200 p-4 sm:p-6">
+      <div className="max-w-2xl mx-auto space-y-8">
         {/* Title */}
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Imposter</h1>
-          <p style={{ fontSize: '1.125rem', color: '#64748b' }}>Made by Mir</p>
+        <div className="text-center space-y-1">
+          <h1 className="text-3xl sm:text-4xl font-bold">Imposter</h1>
+          <p className="text-gray-500">Made by Mir</p>
         </div>
 
         {/* Players Section */}
-        <div className="card" style={{ maxWidth: 'none', marginBottom: '1.5rem', padding: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '600', color: '#000000ff' }}>Players ({numPlayers})</h2>
+        <div className="card p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Players ({numPlayers})</h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.25rem', marginBottom: '1rem' }}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {Array.from({ length: numPlayers }).map((_, i) => (
-              <PlayerTile key={i} name={localNames[i] || `Player ${i + 1}`} onClick={() => setShowPlayerEditor(true)} />
+              <PlayerTile
+                key={i}
+                name={localNames[i] || `Player ${i + 1}`}
+                onClick={() => setShowPlayerEditor(true)}
+              />
             ))}
           </div>
         </div>
@@ -64,22 +68,16 @@ export default function SetupScreen({
         />
 
         {/* Imposter Hint Toggle */}
-        <ImposterHintToggle imposterGetsHint={imposterGetsHint} setImposterGetsHint={setImposterGetsHint} />
+        <ImposterHintToggle
+          imposterGetsHint={imposterGetsHint}
+          setImposterGetsHint={setImposterGetsHint}
+        />
 
         {/* Start Game */}
-        <div style={{ textAlign: 'center' }}>
+        <div className="text-center">
           <button
             onClick={startGame}
-            style={{
-              fontSize: '1.125rem',
-              fontWeight: '700',
-              padding: '1rem 3rem',
-              backgroundColor: '#9dee50ff',
-              color: 'white',
-              borderRadius: '0.5rem',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="bg-green-500 text-white font-bold py-3 px-6 sm:px-8 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105"
           >
             Start Game
           </button>
