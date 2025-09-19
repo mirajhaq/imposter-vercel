@@ -77,7 +77,7 @@ export default function SetupScreen({
         <div className="text-center">
           <button
             onClick={startGame}
-            className="bg-green-500 text-white font-bold py-3 px-6 sm:px-8 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105"
+            className="start-game-button"
           >
             Start Game
           </button>

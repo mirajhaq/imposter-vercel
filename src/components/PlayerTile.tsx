@@ -16,7 +16,7 @@ export default function PlayerTile({ name, onClick }: PlayerTileProps) {
         textAlign: 'center',
       }}
     >
-      <p style={{ color: '#3b82f6', fontWeight: 500 }}>{name}</p>
+      <p style={{ color: '#000000ff', fontWeight: 900 }}>{name}</p>
     </button>
   )
 }

@@ -134,3 +134,22 @@ html, body {
   color: #dc2626; /* Tailwind red-600 */
   font-weight: 700;
 }
+
+
+.start-game-button {
+  background-color: #10b981;
+  color: white;
+  font-weight: bold;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0 auto; /* This centers the button */
+  display: block; /* Needed for margin: auto to work */
+}
+
+.start-game-button:hover {
+  background-color: #059669;
+  transform: scale(1.05);
+}
