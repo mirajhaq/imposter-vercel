@@ -12,11 +12,22 @@ export default function PlayerTile({ name, onClick }: PlayerTileProps) {
       style={{
         all: 'unset',
         cursor: 'pointer',
-        display: 'block',
-        textAlign: 'center',
+        display: 'inline-block',
+        margin: '0.25rem', // add spacing around each tile
       }}
     >
-      <p style={{ color: '#000000ff', fontWeight: 900 }}>{name}</p>
+      <div
+        style={{
+          padding: '0.5rem 1rem',
+          backgroundColor: '#bdbdbdff',
+          borderRadius: '8px',
+          border: '1px solid #8f8e8eff',
+          minWidth: '80px',
+          textAlign: 'center',
+        }}
+      >
+        <span style={{ color: '#000', fontWeight: 600 }}>{name}</span>
+      </div>
     </button>
   )
 }

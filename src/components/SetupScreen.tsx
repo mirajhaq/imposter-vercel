@@ -44,22 +44,31 @@ export default function SetupScreen({
         </div>
 
         {/* Players Section */}
-        <div className="card p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Players ({numPlayers})</h2>
-          </div>
+        <div 
+  className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition"
+  onClick={() => setShowPlayerEditor(true)}
+>
+  {/* Center title */}
+  <div className="text-center mb-4">
+    <h2 className="text-lg font-semibold">Players ({numPlayers})</h2>
+  </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {Array.from({ length: numPlayers }).map((_, i) => (
-              <PlayerTile
-                key={i}
-                name={localNames[i] || `Player ${i + 1}`}
-                onClick={() => setShowPlayerEditor(true)}
-              />
-            ))}
-          </div>
-        </div>
-
+  {/* Center player tiles */}
+  <div style={{
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center', // centers the tiles
+    gap: '0.5rem',           // spacing between tiles
+  }}>
+    {Array.from({ length: numPlayers }).map((_, i) => (
+      <PlayerTile
+        key={i}
+        name={localNames[i] || `Player ${i + 1}`}
+        onClick={() => setShowPlayerEditor(true)}
+      />
+    ))}
+  </div>
+</div>
         {/* Theme Section */}
         <ThemeTile
           selectedThemes={selectedThemes}
