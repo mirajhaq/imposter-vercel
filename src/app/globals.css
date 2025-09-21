@@ -1,5 +1,6 @@
 html, body {
   font-family: 'Inter', sans-serif;
+  background-color: #02263d;
 }
 
 
@@ -148,4 +149,22 @@ html, body {
 .start-game-button:hover {
   background-color: #059669;
   transform: scale(1.05);
+}
+
+.imposter-title {
+  color: white;
+  text-transform: uppercase;
+  font-weight: 900;        /* really bold */
+  letter-spacing: 0.1em;   /* wider spacing between letters */
+  display: block;          /* ensures margin auto works */
+  text-align: center;      /* centers the text itself */
+  margin: 0 auto;   
+}
+
+
+.imposter-subtitle {
+  color: #ffffff;          /* light gray for subtle contrast */
+  display: block;          /* ensures margin auto works */
+  text-align: center;      /* centers the text itself */
+  margin: 0 auto;  
 }
