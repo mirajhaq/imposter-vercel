@@ -40,7 +40,7 @@ export default function SetupScreen({
         {/* Title */}
         <div className="text-center space-y-1">
           <h1 className="imposter-title text-3xl sm:text-4xl">Imposter</h1>
-          <p className="imposter-subtitle">Made by Mir</p>
+          <p className="imposter-subtitle"></p>
         </div>
 
         {/* Players Section */}

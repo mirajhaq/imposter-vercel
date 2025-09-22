@@ -155,8 +155,8 @@ html, body {
 .imposter-title {
   color: white;
   text-transform: uppercase;
-  font-weight: 900;        /* really bold */
-  letter-spacing: 0.1em;   /* wider spacing between letters */
+  font-weight: 600;        /* really bold */
+  letter-spacing: 0.05em;   /* wider spacing between letters */
   display: block;          /* ensures margin auto works */
   text-align: center;      /* centers the text itself */
   margin: 0 auto;   
@@ -167,5 +167,6 @@ html, body {
   color: #ffffff;          /* light gray for subtle contrast */
   display: block;          /* ensures margin auto works */
   text-align: center;      /* centers the text itself */
-  margin: 0 auto;  
+  margin: 0 auto; 
+  padding: 5px; 
 }
