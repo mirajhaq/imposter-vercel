@@ -14,10 +14,8 @@ export default function ThemeTile({ selectedThemes, allThemes, onClick }: ThemeT
       style={{
         all: 'unset',
         cursor: 'pointer',
-        display: 'block',
-        maxWidth: 'none',
-        marginBottom: '1rem',
-        padding: '1rem',
+        display: 'inline-block',
+        margin: '0.25rem', // add spacing around each tile
       }}
     >
       <h2 style={{ fontSize: '1rem', fontWeight: '600', color: '#000000ff', marginBottom: '1.5rem' }}>Themes</h2>
@@ -34,7 +32,7 @@ export default function ThemeTile({ selectedThemes, allThemes, onClick }: ThemeT
           : selectedThemes.map((theme) => (
               <span
                 key={theme}
-                style={{ padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', borderRadius: '9999px' }}
+                style={{ padding: '0.5rem 1rem', backgroundColor: '#c79611ff', color: 'white', borderRadius: '9999px' }}
               >
                 {theme}
               </span>

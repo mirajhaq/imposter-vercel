@@ -58,6 +58,7 @@ html, body {
   background-color: rgb(230, 230, 230);
   padding: 1rem;
   border-radius: 12px;
+  margin-bottom: 1.5rem; 
 }
 
 /* Flex container for centering */

@@ -53,34 +53,52 @@ export default function SetupScreen({
     <h2 className="text-lg font-semibold">Players ({numPlayers})</h2>
   </div>
 
-  {/* Center player tiles */}
-  <div style={{
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center', // centers the tiles
-    gap: '0.5rem',           // spacing between tiles
-  }}>
-    {Array.from({ length: numPlayers }).map((_, i) => (
-      <PlayerTile
-        key={i}
-        name={localNames[i] || `Player ${i + 1}`}
-        onClick={() => setShowPlayerEditor(true)}
-      />
-    ))}
-  </div>
-</div>
-        {/* Theme Section */}
+          {/* Center player tiles */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center', // centers the tiles
+            gap: '0.5rem',           // spacing between tiles
+          }}>
+
+            {Array.from({ length: numPlayers }).map((_, i) => (
+            <PlayerTile
+            key={i}
+            name={localNames[i] || `Player ${i + 1}`}
+            onClick={() => setShowPlayerEditor(true)}
+          />
+        ))}
+      </div>
+    </div>
+
+    
+      {/* Theme Section */}
+      <div
+        className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition"
+        onClick={() => setShowThemeEditor(true)}
+      >
+        <div className="text-center mb-4">
+          <h2 className="text-lg font-semibold">Themes</h2>
+        </div>
+
         <ThemeTile
           selectedThemes={selectedThemes}
           allThemes={allThemes}
           onClick={() => setShowThemeEditor(true)}
         />
+      </div>
 
         {/* Imposter Hint Toggle */}
-        <ImposterHintToggle
-          imposterGetsHint={imposterGetsHint}
-          setImposterGetsHint={setImposterGetsHint}
-        />
+        <div className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition">
+          <div className="text-center mb-4">
+
+          </div>
+
+          <ImposterHintToggle
+            imposterGetsHint={imposterGetsHint}
+            setImposterGetsHint={setImposterGetsHint}
+          />
+        </div>
 
         {/* Start Game */}
         <div className="text-center">
