@@ -1,14 +1,15 @@
+// src/components/ThemeHintToggle.tsx
 import React from 'react'
 
-type ImposterHintToggleProps = {
-  imposterGetsHint: boolean
-  setImposterGetsHint: (v: boolean) => void
+type ThemeHintToggleProps = {
+  themeHintEnabled: boolean
+  setThemeHintEnabled: (v: boolean) => void
 }
 
-export default function ImposterHintToggle({ imposterGetsHint, setImposterGetsHint }: ImposterHintToggleProps) {
+export default function ThemeHintToggle({ themeHintEnabled, setThemeHintEnabled }: ThemeHintToggleProps) {
   return (
     <button
-      onClick={() => setImposterGetsHint(!imposterGetsHint)}
+      onClick={() => setThemeHintEnabled(!themeHintEnabled)}
       className="card"
       style={{
         all: 'unset',
@@ -19,7 +20,7 @@ export default function ImposterHintToggle({ imposterGetsHint, setImposterGetsHi
         padding: '0rem',
       }}
     >
-      <h2 style={{ fontSize: '1rem', fontWeight: '600', color: '#000000ff', marginBottom: '1rem' }}>Imposter Hint</h2>
+      <h2 style={{ fontSize: '1rem', fontWeight: '600', color: '#000000ff', marginBottom: '1rem' }}>Theme Hint</h2>
       <div
         style={{
           display: 'flex',
@@ -32,17 +33,17 @@ export default function ImposterHintToggle({ imposterGetsHint, setImposterGetsHi
           margin: '0 auto',
         }}
       >
-        <span style={{ fontSize: '1rem', color: '#475569' }}>{imposterGetsHint ? 'Enabled' : 'Disabled'}</span>
+        <span style={{ fontSize: '1rem', color: '#475569' }}>{themeHintEnabled ? 'Enabled' : 'Disabled'}</span>
         <span
           style={{
             padding: '0.25rem 0.75rem',
             borderRadius: '9999px',
-            backgroundColor: imposterGetsHint ? '#10b981' : '#ef4444',
+            backgroundColor: themeHintEnabled ? '#10b981' : '#ef4444',
             color: 'white',
             fontWeight: 600,
           }}
         >
-          {imposterGetsHint ? 'On' : 'Off'}
+          {themeHintEnabled ? 'On' : 'Off'}
         </span>
       </div>
     </button>

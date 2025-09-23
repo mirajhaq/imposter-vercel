@@ -5,6 +5,8 @@ import PlayerEditorModal from './PlayerEditorModal'
 import ThemeTile from './ThemeTile'
 import ThemeEditorModal from './ThemeEditorModal'
 import ImposterHintToggle from './ImposterHintToggle'
+import ThemeHintToggle from './ThemeHintToggle'
+
 
 type SetupScreenProps = {
   numPlayers: number
@@ -17,6 +19,8 @@ type SetupScreenProps = {
   startGame: () => void
   imposterGetsHint: boolean
   setImposterGetsHint: (v: boolean) => void
+  themeHintEnabled: boolean
+  setThemeHintEnabled: (v: boolean) => void
 }
 
 export default function SetupScreen({
@@ -30,6 +34,8 @@ export default function SetupScreen({
   startGame,
   imposterGetsHint,
   setImposterGetsHint,
+  setThemeHintEnabled,
+  themeHintEnabled,
 }: SetupScreenProps) {
   const [showPlayerEditor, setShowPlayerEditor] = useState(false)
   const [showThemeEditor, setShowThemeEditor] = useState(false)
@@ -88,17 +94,20 @@ export default function SetupScreen({
         />
       </div>
 
-        {/* Imposter Hint Toggle */}
-        <div className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition">
-          <div className="text-center mb-4">
-
+        {/* Hint Toggles */}
+        <div className="card p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <ImposterHintToggle
+              imposterGetsHint={imposterGetsHint}
+              setImposterGetsHint={setImposterGetsHint}
+            />
+            <ThemeHintToggle
+              themeHintEnabled={themeHintEnabled}
+              setThemeHintEnabled={setThemeHintEnabled}
+            />
           </div>
-
-          <ImposterHintToggle
-            imposterGetsHint={imposterGetsHint}
-            setImposterGetsHint={setImposterGetsHint}
-          />
         </div>
+
 
         {/* Start Game */}
         <div className="text-center">

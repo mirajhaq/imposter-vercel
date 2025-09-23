@@ -7,11 +7,22 @@ type Props = {
   isImposter: boolean
   secret?: string
   hint?: string
+  theme?: string
+  themeHintEnabled?: boolean
   onDone: () => void
   isLastPlayer: boolean
 }
 
-export default function PlayerReveal({ name, isImposter, secret, hint, onDone, isLastPlayer }: Props) {
+export default function PlayerReveal({
+  name,
+  isImposter,
+  secret,
+  hint,
+  theme,
+  themeHintEnabled = false,
+  onDone,
+  isLastPlayer,
+}: Props) {
   const [shown, setShown] = React.useState(false)
 
   return (
@@ -33,6 +44,12 @@ export default function PlayerReveal({ name, isImposter, secret, hint, onDone, i
                 <>
                   <p className="info-text info-imposter">Imposter — you see a hint</p>
                   <p className="info-highlight info-imposter">{hint}</p>
+                  {themeHintEnabled && (
+                    <>
+                      <p className="info-text info-imposter mt-2">Theme:</p>
+                      <p className="info-highlight info-imposter">{theme}</p>
+                    </>
+                  )}
                 </>
               ) : (
                 <>

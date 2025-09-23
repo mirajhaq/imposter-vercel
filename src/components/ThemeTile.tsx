@@ -18,13 +18,13 @@ export default function ThemeTile({ selectedThemes, allThemes, onClick }: ThemeT
         margin: '0.25rem', // add spacing around each tile
       }}
     >
-      <h2 style={{ fontSize: '1rem', fontWeight: '600', color: '#000000ff', marginBottom: '1.5rem' }}>Themes</h2>
+      <h2 style={{ fontSize: '1rem', fontWeight: '600', color: '#000000ff', marginBottom: '1.5rem' }}></h2>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
         {selectedThemes.length === 0
           ? allThemes.map((theme) => (
               <span
                 key={theme}
-                style={{ padding: '0.5rem 1rem', backgroundColor: '#e2e8f0', borderRadius: '4px', color: '#64748b' }}
+                style={{ padding: '0.5rem 1rem', backgroundColor: '#c2c2c2ff', borderRadius: '4px', color: '#64748b' }}
               >
                 {theme}
               </span>

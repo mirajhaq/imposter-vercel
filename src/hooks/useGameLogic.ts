@@ -23,6 +23,10 @@ export function useGameLogic() {
   const [showThemeSelector, setShowThemeSelector] = React.useState(false)
   const [selectedThemes, setSelectedThemes] = React.useState<string[]>([])
 
+  // Hint toggle states
+  const [imposterGetsHint, setImposterGetsHint] = React.useState(false)
+  const [themeHintEnabled, setThemeHintEnabled] = React.useState(false)
+
   // Get all unique themes
   const allThemes = React.useMemo(() => {
     const themes = new Set(DEFAULT_WORDS.map(word => word.theme))
@@ -84,6 +88,8 @@ export function useGameLogic() {
     setCurrentRevealIndex(0)
     setStartingPlayerIndex(0)
     setWordPair({ secret: '', hint: '', theme: '' })
+    setImposterGetsHint(false)
+    setThemeHintEnabled(false)
   }
 
   return {
@@ -102,6 +108,10 @@ export function useGameLogic() {
     wordPair,
     startingPlayerIndex,
     currentRevealIndex,
+    imposterGetsHint,
+    setImposterGetsHint,
+    themeHintEnabled,
+    setThemeHintEnabled,
 
     // actions
     toggleTheme,
