@@ -7,13 +7,13 @@ import ThemeEditorModal from './ThemeEditorModal'
 import ImposterHintToggle from './ImposterHintToggle'
 import ThemeHintToggle from './ThemeHintToggle'
 
-
 type SetupScreenProps = {
   numPlayers: number
   setNumPlayers: (n: number) => void
   localNames: string[]
   setLocalNames: (names: string[]) => void
   allThemes: string[]
+  specialThemes: string[]
   selectedThemes: string[]
   toggleTheme: (theme: string) => void
   startGame: () => void
@@ -29,6 +29,7 @@ export default function SetupScreen({
   localNames,
   setLocalNames,
   allThemes,
+  specialThemes,
   selectedThemes,
   toggleTheme,
   startGame,
@@ -51,48 +52,41 @@ export default function SetupScreen({
 
         {/* Players Section */}
         <div 
-  className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition"
-  onClick={() => setShowPlayerEditor(true)}
->
-  {/* Center title */}
-  <div className="text-center mb-4">
-    <h2 className="text-lg font-semibold">Players ({numPlayers})</h2>
-  </div>
+          className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition"
+          onClick={() => setShowPlayerEditor(true)}
+        >
+          <div className="text-center mb-4">
+            <h2 className="text-lg font-semibold">Players ({numPlayers})</h2>
+          </div>
 
-          {/* Center player tiles */}
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center', // centers the tiles
-            gap: '0.5rem',           // spacing between tiles
-          }}>
-
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem' }}>
             {Array.from({ length: numPlayers }).map((_, i) => (
-            <PlayerTile
-            key={i}
-            name={localNames[i] || `Player ${i + 1}`}
-            onClick={() => setShowPlayerEditor(true)}
-          />
-        ))}
-      </div>
-    </div>
-
-    
-      {/* Theme Section */}
-      <div
-        className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition"
-        onClick={() => setShowThemeEditor(true)}
-      >
-        <div className="text-center mb-4">
-          <h2 className="text-lg font-semibold">Themes</h2>
+              <PlayerTile
+                key={i}
+                name={localNames[i] || `Player ${i + 1}`}
+                onClick={() => setShowPlayerEditor(true)}
+              />
+            ))}
+          </div>
         </div>
 
-        <ThemeTile
-          selectedThemes={selectedThemes}
-          allThemes={allThemes}
+        {/* Theme Section */}
+        <div
+          className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition"
           onClick={() => setShowThemeEditor(true)}
-        />
-      </div>
+        >
+          <div className="text-center mb-4">
+            <h2 className="text-lg font-semibold">Themes</h2>
+          </div>
+
+          {/* Only show default themes here */}
+          <ThemeTile
+            selectedThemes={selectedThemes}
+            allThemes={allThemes}
+            specialThemes={[]} // hide special packs on main screen
+            onClick={() => setShowThemeEditor(true)}
+          />
+        </div>
 
         {/* Hint Toggles */}
         <div className="card p-4 sm:p-6">
@@ -107,7 +101,6 @@ export default function SetupScreen({
             />
           </div>
         </div>
-
 
         {/* Start Game */}
         <div className="text-center">
@@ -135,6 +128,7 @@ export default function SetupScreen({
         <ThemeEditorModal
           allThemes={allThemes}
           selectedThemes={selectedThemes}
+          specialThemes={specialThemes} // pass special themes here
           toggleTheme={toggleTheme}
           onClose={() => setShowThemeEditor(false)}
         />

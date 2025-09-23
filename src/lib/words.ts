@@ -772,9 +772,12 @@ export const DEFAULT_WORDS: WordPair[] = [
   { secret: 'Respiration', hint: 'Oxygen', theme: 'science' },
   { secret: 'Ecosystem', hint: 'Nature', theme: 'science' },
   { secret: 'Fossil Fuel', hint: 'Energy', theme: 'science' },
-  { secret: 'Volcano', hint: 'Lava', theme: 'science' },
+  { secret: 'Volcano', hint: 'Lava', theme: 'science' }
 
-   // League of Legends
+  ];
+
+export const SPECIAL_WORDS: Record<string, WordPair[]> = {
+  league: [
   { secret: 'Aatrox', hint: 'Shurima', theme: 'league' },
   { secret: 'Ahri', hint: 'Ionia', theme: 'league' },
   { secret: 'Akali', hint: 'Ionia', theme: 'league' },
@@ -923,4 +926,5 @@ export const DEFAULT_WORDS: WordPair[] = [
   { secret: 'Zilean', hint: 'Shurima', theme: 'league' },
   { secret: 'Zoe', hint: 'Targon', theme: 'league' },
   { secret: 'Zyra', hint: 'Ionia', theme: 'league' },
-];
+  ],
+}

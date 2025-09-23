@@ -3,7 +3,7 @@
 import React from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { Player, Step } from '../lib/gameTypes'
-import { DEFAULT_WORDS, WordPair } from '../lib/words'
+import { DEFAULT_WORDS, WordPair, SPECIAL_WORDS } from '../lib/words'
 
 export function useGameLogic() {
   const [step, setStep] = React.useState<Step>('setup')
@@ -29,8 +29,11 @@ export function useGameLogic() {
 
   // Get all unique themes
   const allThemes = React.useMemo(() => {
-    const themes = new Set(DEFAULT_WORDS.map(word => word.theme))
-    return Array.from(themes)
+    return Array.from(new Set(DEFAULT_WORDS.map(word => word.theme)))
+  }, [])
+  // Get all special themes (like "league")
+  const specialThemes = React.useMemo(() => {
+    return Object.keys(SPECIAL_WORDS)
   }, [])
 
   // Toggle theme selection
@@ -43,10 +46,22 @@ export function useGameLogic() {
   }
 
   function startGame() {
-    // Filter words by selected themes if any are selected
-    const filteredWords = selectedThemes.length > 0
-      ? DEFAULT_WORDS.filter(word => selectedThemes.includes(word.theme))
-      : DEFAULT_WORDS
+    let filteredWords: WordPair[] = []
+
+    if (selectedThemes.length > 0) {
+      // Start with default words
+      filteredWords = DEFAULT_WORDS.filter(word => selectedThemes.includes(word.theme))
+
+      // Add matching special packs if selected
+      selectedThemes.forEach(theme => {
+        if (SPECIAL_WORDS[theme]) {
+          filteredWords = filteredWords.concat(SPECIAL_WORDS[theme])
+        }
+      })
+    } else {
+      // If no themes selected, fall back to default words only
+      filteredWords = DEFAULT_WORDS
+    }
 
     if (filteredWords.length === 0) {
       alert("No words available for the selected themes. Please select different themes.")
@@ -71,6 +86,7 @@ export function useGameLogic() {
     setStep('reveal')
     setCurrentRevealIndex(0)
   }
+
 
   function doneReveal() {
     if (currentRevealIndex + 1 >= players.length) {
@@ -102,6 +118,7 @@ export function useGameLogic() {
     showThemeSelector,
     setShowThemeSelector,
     allThemes,
+    specialThemes,
     selectedThemes,
     wordPair,
     startingPlayerIndex,

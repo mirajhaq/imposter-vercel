@@ -20,6 +20,7 @@ export default function Home() {
             localNames={game.localNames}
             setLocalNames={game.setLocalNames}
             allThemes={game.allThemes}
+            specialThemes={game.specialThemes} 
             selectedThemes={game.selectedThemes}
             toggleTheme={game.toggleTheme}
             startGame={game.startGame}

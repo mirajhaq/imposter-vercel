@@ -4,11 +4,12 @@ import ThemeSelector from './ThemeSelector'
 type ThemeEditorModalProps = {
   allThemes: string[]
   selectedThemes: string[]
+  specialThemes?: string[]
   toggleTheme: (theme: string) => void
   onClose: () => void
 }
 
-export default function ThemeEditorModal({ allThemes, selectedThemes, toggleTheme, onClose }: ThemeEditorModalProps) {
+export default function ThemeEditorModal({ allThemes, selectedThemes, specialThemes = [], toggleTheme, onClose }: ThemeEditorModalProps) {
   return (
     <div
       style={{
@@ -42,7 +43,12 @@ export default function ThemeEditorModal({ allThemes, selectedThemes, toggleThem
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
-          <ThemeSelector allThemes={allThemes} selectedThemes={selectedThemes} toggleTheme={toggleTheme} />
+          <ThemeSelector
+            allThemes={allThemes}
+            selectedThemes={selectedThemes}
+            specialThemes={specialThemes} // show special packs here
+            toggleTheme={toggleTheme}
+          />
         </div>
 
         <div style={{ padding: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
