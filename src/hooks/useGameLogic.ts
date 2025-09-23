@@ -24,7 +24,7 @@ export function useGameLogic() {
   const [selectedThemes, setSelectedThemes] = React.useState<string[]>([])
 
   // Hint toggle states
-  const [imposterGetsHint, setImposterGetsHint] = React.useState(false)
+  const [imposterGetsHint, setImposterGetsHint] = React.useState(true)
   const [themeHintEnabled, setThemeHintEnabled] = React.useState(false)
 
   // Get all unique themes
@@ -88,8 +88,6 @@ export function useGameLogic() {
     setCurrentRevealIndex(0)
     setStartingPlayerIndex(0)
     setWordPair({ secret: '', hint: '', theme: '' })
-    setImposterGetsHint(false)
-    setThemeHintEnabled(false)
   }
 
   return {
