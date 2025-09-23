@@ -122,7 +122,7 @@ html, body {
 /* Highlighted info (secret word or hint) */
 .info-highlight {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 00;
   margin-top: 0.25rem;
   color: #111827;
 }
