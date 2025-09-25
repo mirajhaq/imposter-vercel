@@ -12,13 +12,13 @@ html, body {
 
 /* Theme selection buttons */
 .bg-indigo-600 {
-  background-color: #55b6f7;
+  background-color: #330202;
   color: white;
 }
 
 /* Hover states */
 .bg-indigo-600:hover {
-  background-color: #033d64;
+  background-color: #a70a7f;
 }
 
 .bg-gray-200:hover {
@@ -34,7 +34,7 @@ html, body {
 }
 
 .btn-primary {
-  background-color: #55b6f7;
+  background-color: #30000a;
   color: white;
 }
 
@@ -193,3 +193,57 @@ html, body {
   text-align: center;
   box-shadow: 0 8px 16px rgba(0,0,0,0.25);
 }
+
+/* Full-screen flex center is reused */
+.screen-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Play Screen Card */
+.play-screen-card {
+  background-color: rgb(230, 230, 230);
+  padding: 2rem;
+  border-radius: 16px;
+  width: 360px;
+  height: 320px; /* slightly shorter since no title */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* spreads player info & button */
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+}
+
+/* Starting player box - now just a panel */
+.starting-player-box {
+  background-color: #d8d8d8; /* light gray, not blue */
+  color: #111827;             /* dark text */
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  width: 100%;
+  text-align: center;
+}
+
+.starting-player-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.85;
+  margin-bottom: 0.25rem;
+}
+
+.starting-player-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Button */
+.play-screen-button {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
