@@ -22,9 +22,9 @@ export default function ThemeTile({
             key={theme}
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: selectedThemes.includes(theme) ? '#c79611ff' : '#c2c2c2ff',
+              backgroundColor: selectedThemes.includes(theme) ? '#7baf02ff' : '#c2c2c2ff',
               color: selectedThemes.includes(theme) ? 'white' : '#64748b',
-              borderRadius: '9999px'
+              borderRadius: '9px'
             }}
           >
             {theme}

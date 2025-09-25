@@ -26,8 +26,8 @@ export default function ThemeSelector({
             textAlign: 'left',
             padding: '0.75rem',
             borderRadius: '0.375rem',
-            border: '1px solid #d1d5db',
-            backgroundColor: selectedThemes.includes(theme) ? '#3b82f6' : 'white',
+            border: '2px solid #000000ff',
+            backgroundColor: selectedThemes.includes(theme) ? '#7baf02ff' : 'white',
             color: selectedThemes.includes(theme) ? 'white' : '#1e293b',
             cursor: 'pointer'
           }}
@@ -49,9 +49,9 @@ export default function ThemeSelector({
                 textAlign: 'left',
                 padding: '0.75rem',
                 borderRadius: '0.375rem',
-                border: '1px solid #d1d5db',
-                backgroundColor: selectedThemes.includes(theme) ? '#3b82f6' : 'white',
-                color: selectedThemes.includes(theme) ? 'white' : '#1e293b',
+                border: '2px solid #828501ff',
+                backgroundColor: selectedThemes.includes(theme) ? '#c79611ff' : 'white',
+                color: selectedThemes.includes(theme) ? 'white' : '#000000ff',
                 cursor: 'pointer'
               }}
             >

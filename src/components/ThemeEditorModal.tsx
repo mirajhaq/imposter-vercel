@@ -28,7 +28,7 @@ export default function ThemeEditorModal({ allThemes, selectedThemes, specialThe
     >
       <div
         style={{
-          backgroundColor: 'white',
+          backgroundColor: '#dfdfdfff',
           borderRadius: '12px',
           maxWidth: '28rem',
           width: '100%',
@@ -54,7 +54,7 @@ export default function ThemeEditorModal({ allThemes, selectedThemes, specialThe
         <div style={{ padding: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
           <button
             onClick={onClose}
-            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#3b82f6', color: 'white', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500 }}
+            style={{ width: '100%', padding: '0.75rem', backgroundColor: '#1a0101ff', color: 'white', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 500 }}
           >
             Done
           </button>
