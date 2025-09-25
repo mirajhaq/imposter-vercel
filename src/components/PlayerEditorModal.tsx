@@ -18,7 +18,7 @@ export default function PlayerEditorModal({ numPlayers, localNames, setLocalName
   }
 
   const addPlayerFromEditor = () => {
-    if (numPlayers < 8 && newPlayerName.trim()) {
+    if (numPlayers < 15 && newPlayerName.trim()) {
       setNumPlayers(numPlayers + 1)
       const copy = [...localNames]
       copy[numPlayers] = newPlayerName.trim()
@@ -82,7 +82,7 @@ export default function PlayerEditorModal({ numPlayers, localNames, setLocalName
               </div>
             ))}
 
-            {numPlayers < 8 && (
+            {numPlayers < 15 && (
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                 <div style={{ width: '2rem', height: '2rem', backgroundColor: '#f3f4f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ color: '#6b7280', fontWeight: '500', fontSize: '1rem' }}>+</span>

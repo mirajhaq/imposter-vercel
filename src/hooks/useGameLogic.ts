@@ -14,7 +14,7 @@ export function useGameLogic() {
   const [wordPair, setWordPair] = React.useState<WordPair>({ secret: '', hint: '', theme: '' })
 
   const [localNames, setLocalNames] = React.useState<string[]>(
-    Array(8)
+    Array(15)
       .fill('')
       .map((_, i) => `Player ${i + 1}`)
   )

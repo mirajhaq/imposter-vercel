@@ -21,7 +21,7 @@ export default function PlayerTile({ name, onClick }: PlayerTileProps) {
           padding: '0.5rem 1rem',
           backgroundColor: '#bdbdbdff',
           borderRadius: '8px',
-          border: '1px solid rgba(26, 7, 112, 1)',
+          border: '2px solid rgba(167, 167, 167, 1)',
           minWidth: '80px',
           textAlign: 'center',
         }}
