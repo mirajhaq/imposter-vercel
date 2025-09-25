@@ -10,50 +10,47 @@ type ThemeTileProps = {
 export default function ThemeTile({
   selectedThemes,
   allThemes,
-  specialThemes = [],  // default value here
+  specialThemes = [],
   onClick
 }: ThemeTileProps) {
+  // If no themes are selected, show all defaults.
+  // If themes are selected, show ONLY the selected ones (default + special).
+  const themesToShow =
+    selectedThemes.length === 0
+      ? allThemes
+      : selectedThemes.filter(
+          (theme) => allThemes.includes(theme) || specialThemes.includes(theme)
+        )
+
   return (
     <div onClick={onClick}>
-      {/* Default Themes */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-        {allThemes.map((theme) => (
-          <span
-            key={theme}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: selectedThemes.includes(theme) ? '#7baf02ff' : '#c2c2c2ff',
-              color: selectedThemes.includes(theme) ? 'white' : '#64748b',
-              borderRadius: '9px'
-            }}
-          >
-            {theme}
-          </span>
-        ))}
-      </div>
+        {themesToShow.map((theme) => {
+          const isSelected = selectedThemes.includes(theme)
+          const isSpecial = specialThemes.includes(theme)
 
-      {/* Special Packs */}
-      {specialThemes.length > 0 && (
-        <div style={{ marginTop: '0.5rem' }}>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.25rem' }}>Special Packs</h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {specialThemes.map((theme) => (
-              <span
-                key={theme}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: selectedThemes.includes(theme) ? '#3b82f6' : '#c2c2c2ff',
-                  color: selectedThemes.includes(theme) ? 'white' : '#64748b',
-                  borderRadius: '9999px',
-                  cursor: 'pointer'
-                }}
-              >
-                {theme}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+          return (
+            <span
+              key={theme}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: isSpecial ? '8px' : '9px',
+                backgroundColor: isSpecial
+                  ? isSelected
+                    ? '#c79611ff' // gold when selected
+                    : '#c2c2c2ff' // gray when not selected
+                  : isSelected
+                    ? '#7baf02ff' // green when selected
+                    : '#c2c2c2ff', // gray when not selected
+                color: isSelected ? 'white' : '#64748b',
+                cursor: 'pointer'
+              }}
+            >
+              {theme}
+            </span>
+          )
+        })}
+      </div>
     </div>
   )
 }

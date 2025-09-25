@@ -83,7 +83,7 @@ export default function SetupScreen({
           <ThemeTile
             selectedThemes={selectedThemes}
             allThemes={allThemes}
-            specialThemes={[]} // hide special packs on main screen
+            specialThemes={specialThemes} // hide special packs on main screen
             onClick={() => setShowThemeEditor(true)}
           />
         </div>
