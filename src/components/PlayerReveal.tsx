@@ -27,7 +27,7 @@ export default function PlayerReveal({
 
   return (
     <div className="screen-center">
-      <div className="card text-center">
+      <div className="player-reveal-card">
         <h2 className="step-title">Reveal for {name}</h2>
 
         {!shown ? (

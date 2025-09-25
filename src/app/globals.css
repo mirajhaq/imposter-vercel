@@ -170,3 +170,26 @@ html, body {
   margin: 0 auto; 
   padding: 5px; 
 }
+
+/* Full-screen flex center */
+.screen-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* full viewport height */
+}
+
+/* Player reveal card - fixed square */
+.player-reveal-card {
+  background-color: rgb(230, 230, 230);
+  padding: 2rem;
+  border-radius: 12px;
+  width: 320px;     /* fixed width */
+  height: 320px;    /* fixed height for square */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* center content vertically */
+  align-items: center;     /* center content horizontally */
+  text-align: center;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+}
