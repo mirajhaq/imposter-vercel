@@ -33,7 +33,7 @@ export default function PlayerReveal({
         {!shown ? (
           <button
             onClick={() => setShown(true)}
-            className="btn btn-primary"
+            className="btn btn-primary play-screen-button"
           >
             Reveal
           </button>
@@ -61,7 +61,7 @@ export default function PlayerReveal({
 
             <button
               onClick={onDone}
-              className="btn btn-primary mt-4"
+              className="btn btn-primary play-screen-button"
             >
               {isLastPlayer ? 'Start Game' : 'Done — Pass phone'}
             </button>

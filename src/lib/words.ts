@@ -177,7 +177,6 @@ export const DEFAULT_WORDS: WordPair[] = [
   { secret: 'Bus Stop', hint: 'Waiting', theme: 'Places' },
   { secret: 'Airport Terminal', hint: 'Flight', theme: 'Places' },
   { secret: 'Mosque', hint: 'Prayer', theme: 'Places' },
-  { secret: 'S', hint: 'Worship', theme: 'Places' },
   { secret: 'Synagogue', hint: 'Torah', theme: 'Places' },
   { secret: 'Gurdwara', hint: 'Prayer', theme: 'Places' },
 

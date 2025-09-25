@@ -1,4 +1,3 @@
-// src/components/GameResults.tsx
 import React from 'react'
 import { Player } from '../lib/gameTypes'
 import { WordPair } from '../lib/words'
@@ -20,39 +19,40 @@ export default function GameResults({
 }: GameResultsProps) {
   const imposter = players.find((p) => p.role === 'imposter')
 
-  // Determine what the imposter saw
   const hintLines: string[] = []
   if (imposterGetsHint) hintLines.push(wordPair.hint)
   if (themeHintEnabled) hintLines.push(`Theme: ${wordPair.theme}`)
   if (hintLines.length === 0) hintLines.push('No hint revealed')
 
   return (
-    <div className="card text-center">
-      <h2 className="step-title">Game Results</h2>
+    <div className="screen-center">
+      <div className="game-results-card text-center">
+        <h2 className="game-results-title mb-4">Game Results</h2>
 
-      <div className="info-card mb-6">
-        <p className="text-lg mb-2">Secret Word was:</p>
-        <p className="text-2xl font-bold">{wordPair.secret}</p>
+        <div className="results-panel mb-4">
+          <p className="results-label">Secret Word:</p>
+          <p className="results-value">{wordPair.secret}</p>
+        </div>
 
-        <p className="text-lg mt-2">Hint was:</p>
-        {hintLines.map((line, index) => (
-          <p key={index} className="text-xl">{line}</p>
-        ))}
+        <div className="results-panel mb-4">
+          <p className="results-label">Hint:</p>
+          {hintLines.map((line, index) => (
+            <p key={index} className="results-value">{line}</p>
+          ))}
+        </div>
+
+        <div className="results-panel mb-6">
+          <p className="results-label">The Imposter Was:</p>
+          <p className="results-value imposter-name">{imposter?.name}</p>
+        </div>
+
+        <button
+          onClick={resetToSetup}
+          className="btn btn-primary game-results-button"
+        >
+          Play Again
+        </button>
       </div>
-
-      <div className="alert-card mb-6">
-        <p className="text-lg mb-2">The imposter was:</p>
-        <p className="text-2xl font-bold text-red-600">
-          {imposter?.name}
-        </p>
-      </div>
-
-      <button
-        onClick={resetToSetup}
-        className="btn btn-primary"
-      >
-        Play Again
-      </button>
     </div>
   )
 }

@@ -39,8 +39,8 @@ html, body {
 }
 
 .btn-primary:hover {
-  background-color: #033d64;
-  transform: scale(1.05);
+  background-color: #0e0101;
+  transform: scale(1.01);
 }
 
 .btn-secondary {
@@ -247,3 +247,59 @@ html, body {
   border-radius: 12px;
 }
 
+/* Game Results Card */
+.game-results-card {
+  background-color: rgb(230, 230, 230);
+  padding: 2rem;
+  border-radius: 16px;
+  width: 360px;
+  height: auto; /* allow card to expand if hint is long */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+}
+
+/* Title */
+.game-results-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #02263d;
+}
+
+/* Panels for secret, hint, and imposter */
+.results-panel {
+  background-color: #f3f4f6;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.results-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.8;
+  margin-bottom: 0.25rem;
+}
+
+.results-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #02263d;
+}
+
+/* Imposter name highlight */
+.imposter-name {
+  color: #dc2626; /* red for imposter */
+}
+
+/* Button */
+.game-results-button {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  border-radius: 12px;
+}
