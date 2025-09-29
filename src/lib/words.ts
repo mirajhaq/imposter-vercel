@@ -676,7 +676,7 @@ export const DEFAULT_WORDS: WordPair[] = [
   { secret: 'Netherlands', hint: 'Amsterdam', theme: 'Locations' },
   { secret: 'Argentina', hint: 'Buenos Aires', theme: 'Locations' },
   { secret: 'Morocco', hint: 'Marrakech', theme: 'Locations' },
-  { secret: 'South Korea', hint: 'Seoul', theme: 'Locations' },
+  { secret: 'South Korea', hint: 'Pop', theme: 'Locations' },
   { secret: 'North Korea', hint: 'Pyongyang', theme: 'Locations' },
   { secret: 'Vietnam', hint: 'Hanoi', theme: 'Locations' },
   { secret: 'Singapore', hint: 'Marina Bay', theme: 'Locations' },
