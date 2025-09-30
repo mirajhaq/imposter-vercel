@@ -62,9 +62,6 @@ export default function PlayerEditorModal({ numPlayers, localNames, setLocalName
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {Array.from({ length: numPlayers }).map((_, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ width: '2rem', height: '2rem', backgroundColor: '#757475ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ color: '#000000ff', fontWeight: '700', fontSize: '0.875rem' }}>{i + 1}</span>
-                </div>
                 <input
                   value={localNames[i] || ''}
                   onChange={(e) => handlePlayerNameChange(i, e.target.value)}
@@ -84,9 +81,10 @@ export default function PlayerEditorModal({ numPlayers, localNames, setLocalName
 
             {numPlayers < 15 && (
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                <div style={{ width: '2rem', height: '2rem', backgroundColor: '#f3f4f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {/*<div style={{ width: '2rem', height: '2rem', backgroundColor: '#f3f4f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ color: '#6b7280', fontWeight: '500', fontSize: '1rem' }}>+</span>
                 </div>
+                */}
                 <input
                   value={newPlayerName}
                   onChange={(e) => setNewPlayerName(e.target.value)}

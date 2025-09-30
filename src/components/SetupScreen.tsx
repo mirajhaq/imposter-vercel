@@ -46,7 +46,7 @@ export default function SetupScreen({
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Title */}
         <div className="text-center space-y-1">
-          <h1 className="imposter-title text-3xl sm:text-4xl">Imposter</h1>
+          <h1 className="imposter-title text-3xl sm:text-4xl">Minposter</h1>
           <p className="imposter-subtitle"></p>
         </div>
 
