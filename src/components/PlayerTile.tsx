@@ -19,7 +19,7 @@ export default function PlayerTile({ name, onClick }: PlayerTileProps) {
       <div
         style={{
           padding: '0.5rem 1rem',
-          backgroundColor: '#bdbdbdff',
+          backgroundColor: '#ff9b9bff',
           borderRadius: '8px',
           border: '2px solid rgba(167, 167, 167, 1)',
           minWidth: '80px',
