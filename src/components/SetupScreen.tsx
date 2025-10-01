@@ -1,4 +1,4 @@
-// src/components/SetupScreen.tsx
+'use client'
 import React, { useState } from 'react'
 import PlayerTile from './PlayerTile'
 import PlayerEditorModal from './PlayerEditorModal'
@@ -6,6 +6,7 @@ import ThemeTile from './ThemeTile'
 import ThemeEditorModal from './ThemeEditorModal'
 import ImposterHintToggle from './ImposterHintToggle'
 import ThemeHintToggle from './ThemeHintToggle'
+import { supabase } from '../lib/supabaseClient'
 
 type SetupScreenProps = {
   numPlayers: number
@@ -40,6 +41,63 @@ export default function SetupScreen({
 }: SetupScreenProps) {
   const [showPlayerEditor, setShowPlayerEditor] = useState(false)
   const [showThemeEditor, setShowThemeEditor] = useState(false)
+  const [onlineBusy, setOnlineBusy] = useState(false)
+
+  // --- Online: Host game
+  const hostOnlineGame = async () => {
+    try {
+      setOnlineBusy(true)
+
+      // make sure user has a session
+      const { data: session } = await supabase.auth.getSession()
+      if (!session?.session) {
+        await supabase.auth.signInAnonymously()
+      }
+
+      const hostName = prompt('Enter your name') || 'Host'
+      const { data, error } = await supabase.rpc('create_room', { host_name: hostName })
+      if (error) throw error
+
+      const roomCode = (Array.isArray(data) ? data[0]?.code : data?.code) ?? null
+      if (!roomCode) throw new Error('No room code returned')
+
+      alert(`Room created! Code: ${roomCode}`)
+      window.location.assign(`/r/${roomCode}`)
+    } catch (err: any) {
+      alert(err.message || 'Failed to host room')
+    } finally {
+      setOnlineBusy(false)
+    }
+  }
+
+  // --- Online: Join game
+  const joinOnlineGame = async () => {
+    try {
+      setOnlineBusy(true)
+
+      const code = (prompt('Enter room code') || '').toUpperCase()
+      if (!code) return
+      const playerName = prompt('Enter your name') || 'Player'
+
+      const { data: session } = await supabase.auth.getSession()
+      if (!session?.session) {
+        await supabase.auth.signInAnonymously()
+      }
+
+      const { error } = await supabase.rpc('join_room', {
+        room_code: code,
+        player_name: playerName,
+      })
+      if (error) throw error
+
+      alert(`Joined room ${code}`)
+      window.location.assign(`/r/${code}`)
+    } catch (err: any) {
+      alert(err.message || 'Failed to join room')
+    } finally {
+      setOnlineBusy(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-gray-200 p-4 sm:p-6">
@@ -50,8 +108,32 @@ export default function SetupScreen({
           <p className="imposter-subtitle"></p>
         </div>
 
+        {/* Online (beta) - moved up */}
+        <div className="card p-4 sm:p-6">
+          <h2 className="text-center font-semibold mb-2">Online (beta)</h2>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={hostOnlineGame}
+              disabled={onlineBusy}
+              className="start-game-button"
+            >
+              {onlineBusy ? 'Working...' : 'Host Online Game'}
+            </button>
+            <button
+              onClick={joinOnlineGame}
+              disabled={onlineBusy}
+              className="start-game-button"
+            >
+              {onlineBusy ? 'Working...' : 'Join Online Game'}
+            </button>
+          </div>
+          <p className="text-center text-xs text-gray-500 mt-3">
+            You’ll get a 4-letter code and a link (e.g. /r/ABCD).
+          </p>
+        </div>
+
         {/* Players Section */}
-        <div 
+        <div
           className="card p-4 sm:p-6 cursor-pointer hover:shadow-md transition"
           onClick={() => setShowPlayerEditor(true)}
         >
@@ -83,7 +165,7 @@ export default function SetupScreen({
           <ThemeTile
             selectedThemes={selectedThemes}
             allThemes={allThemes}
-            specialThemes={specialThemes} // hide special packs on main screen
+            specialThemes={specialThemes}
             onClick={() => setShowThemeEditor(true)}
           />
         </div>
@@ -102,13 +184,13 @@ export default function SetupScreen({
           </div>
         </div>
 
-        {/* Start Game */}
+        {/* Start Game (local mode) */}
         <div className="text-center">
           <button
             onClick={startGame}
             className="start-game-button"
           >
-            Start Game
+            Start Local Game
           </button>
         </div>
       </div>
@@ -128,7 +210,7 @@ export default function SetupScreen({
         <ThemeEditorModal
           allThemes={allThemes}
           selectedThemes={selectedThemes}
-          specialThemes={specialThemes} // pass special themes here
+          specialThemes={specialThemes}
           toggleTheme={toggleTheme}
           onClose={() => setShowThemeEditor(false)}
         />
