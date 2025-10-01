@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Imposter",
-  description: "Made by Mir",
+  title: "Minposter",
+  description: "Imposter word game - Miraj",
 };
 
 export default function RootLayout({
