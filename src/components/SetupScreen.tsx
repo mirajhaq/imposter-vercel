@@ -110,7 +110,7 @@ export default function SetupScreen({
 
         {/* Online (beta) - moved up */}
         <div className="card p-4 sm:p-6">
-          <h2 className="text-center font-semibold mb-2">Online (beta)</h2>
+          <h2 className="text-center font-semibold mb-2">Online</h2>
           <div className="flex gap-4 justify-center">
             <button
               onClick={hostOnlineGame}
@@ -128,7 +128,6 @@ export default function SetupScreen({
             </button>
           </div>
           <p className="text-center text-xs text-gray-500 mt-3">
-            You’ll get a 4-letter code and a link (e.g. /r/ABCD).
           </p>
         </div>
 
