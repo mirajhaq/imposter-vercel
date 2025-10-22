@@ -32,7 +32,6 @@ type OnlineState = {
   order?: string[];
   revealIndex?: number;
   starter?: string | null;
-  // optional debug info:
   imposterUserId?: string;
   chosenWord?: { secret: string; hint: string; theme: string };
 };
@@ -144,7 +143,40 @@ export default function RoomPage() {
     })();
   }, []);
 
-  // --- Initial load
+  // Utility: ensure I'm a member of this room (DB-level check/insert)
+  const ensureSelfMembership = useCallback(
+    async (rid: string) => {
+      if (!meUserId) return;
+      // Check DB directly (don’t rely on local state)
+      const { data: existing } = await supabase
+        .from('room_players')
+        .select('id')
+        .eq('room_id', rid)
+        .eq('user_id', meUserId)
+        .maybeSingle();
+
+      if (existing) return;
+
+      const stored = (getStoredName() || 'Player').trim();
+      // If no stored name, show modal to capture it before we can see others (due to RLS)
+      if (!stored) {
+        setShowNameModal(true);
+        return;
+      }
+
+      const { error: insertErr } = await supabase
+        .from('room_players')
+        .insert({ room_id: rid, user_id: meUserId, name: stored, is_host: false });
+
+      // ignore unique race (e.g., parallel tab)
+      if (insertErr && (insertErr as any).code !== '23505') {
+        // optional: console.warn(insertErr);
+      }
+    },
+    [meUserId]
+  );
+
+  // --- Initial load (fix order: find room -> ensure membership -> then load lists) ---
   useEffect(() => {
     if (!meUserId || !code) return;
 
@@ -163,11 +195,15 @@ export default function RoomPage() {
       setRoomId(room.id);
       setStatus(room.status);
 
+      // CRITICAL: ensure I'm a member BEFORE selecting players (so RLS will allow seeing others)
+      await ensureSelfMembership(room.id);
+
+      // Now load players and state
       const { data: list } = await supabase
         .from('room_players')
         .select('id, name, is_host, user_id, room_id')
         .eq('room_id', room.id)
-        .order('joined_at', { ascending: true });
+        .order('id', { ascending: true });
 
       setPlayers(list || []);
 
@@ -187,39 +223,11 @@ export default function RoomPage() {
       if (s.starter !== undefined) setStarter(s.starter ?? null);
       if (s.imposterUserId !== undefined) setImposterUserId(s.imposterUserId ?? null);
 
-      // ---- Ensure I'm in the room with a remembered name ----
-      const meInRoom = (list || []).some((p) => p.user_id === meUserId);
-      if (!meInRoom) {
-        const stored = getStoredName();
-        if (stored && stored.trim()) {
-          try {
-            const { error: joinErr } = await supabase
-              .from('room_players')
-              .insert({
-                room_id: room.id,
-                user_id: meUserId,
-                name: stored.trim(),
-                is_host: false,
-              });
-            if (joinErr) {
-              // optionally log joinErr
-            }
-          } catch {
-            // network error; ignore
-          }
-        } else {
-          // ask once for a name, then save + join
-          setShowNameModal(true);
-        }
-      } else {
-        // If I'm already in the room and local storage is empty, store my current DB name for next time
-        const meRow = (list || []).find((p) => p.user_id === meUserId);
-        if (meRow && !getStoredName()) {
-          setStoredName(meRow.name);
-        }
-      }
+      // Store my DB name for next time if missing locally
+      const meRow = (list || []).find((p) => p.user_id === meUserId);
+      if (meRow && !getStoredName()) setStoredName(meRow.name);
     })();
-  }, [meUserId, code, router]);
+  }, [meUserId, code, router, ensureSelfMembership]);
 
   // --- Realtime subscriptions (rooms, room_players, room_state)
   useEffect(() => {
@@ -309,7 +317,7 @@ export default function RoomPage() {
     [players, meUserId]
   );
 
-  // --- Leave room helper (used on back/close/unmount) ---
+  // --- Leave room helper (only for true navigations/close) ---
   const leaveRoom = useCallback(async () => {
     if (!roomId || !meUserId) return;
     try {
@@ -323,27 +331,54 @@ export default function RoomPage() {
     }
   }, [roomId, meUserId]);
 
-  // Try to remove me when navigating away / closing the tab / hiding the page
+  // --- Ensure membership (reinsert if missing when tab returns) ---
+  const ensureMembershipOnReturn = useCallback(async () => {
+    if (!roomId || !meUserId) return;
+    const { data: existing } = await supabase
+      .from('room_players')
+      .select('id')
+      .eq('room_id', roomId)
+      .eq('user_id', meUserId)
+      .maybeSingle();
+    if (existing) return;
+
+    const stored = (getStoredName() || 'Player').trim();
+    await supabase
+      .from('room_players')
+      .insert({ room_id: roomId, user_id: meUserId, name: stored, is_host: false })
+      .then(({ error }) => {
+        if (error && (error as any).code !== '23505') {
+          // optional: console.warn(error);
+        }
+      });
+  }, [roomId, meUserId]);
+
+  // Unload / visibility listeners (no cleanup calling leaveRoom to avoid accidental self-delete)
   useEffect(() => {
     if (!roomId || !meUserId) return;
 
-    const handlePageHide = () => { void leaveRoom(); };
     const handleBeforeUnload = () => { void leaveRoom(); };
+    const handlePageHide = (ev: Event) => {
+      const persisted = (ev as any).persisted === true; // bfcache case
+      if (persisted) return;
+      void leaveRoom();
+    };
     const handleVisibility = () => {
-      if (document.visibilityState === 'hidden') void leaveRoom();
+      if (document.visibilityState === 'visible') {
+        void ensureMembershipOnReturn();
+      }
     };
 
-    window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide as any);
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide as any);
       document.removeEventListener('visibilitychange', handleVisibility);
-      void leaveRoom(); // SPA unmount
     };
-  }, [roomId, meUserId, leaveRoom]);
+  }, [roomId, meUserId, leaveRoom, ensureMembershipOnReturn]);
 
   // --- Host pushes setup changes into room_state
   const updateRoomState = useCallback(
@@ -479,7 +514,6 @@ export default function RoomPage() {
     setEditingName(false);
   };
 
-  // When you click your tile, open the name modal prefilled with your current name
   const onMyTileClick = () => {
     setEditingName(true);
     setShowNameModal(true);
@@ -513,7 +547,7 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {/* Players (realtime) — styled like local PlayerTile; only my tile is clickable */}
+        {/* Players (tiles) */}
         <div className="card p-4 sm:p-6">
           <h2 className="text-lg font-semibold mb-3 text-center">Players</h2>
 
@@ -527,14 +561,12 @@ export default function RoomPage() {
                   key={p.id}
                   onClick={onClick}
                   title={mine ? 'Click to edit your name' : undefined}
-                  // Match local PlayerTile's outer button style
                   style={{
                     all: 'unset',
                     cursor: mine ? 'pointer' : 'default',
                     display: 'inline-block',
                     margin: '0.25rem',
                   }}
-                  // Add focus ring only if it's mine
                   onKeyDown={(e) => {
                     if (mine && (e.key === 'Enter' || e.key === ' ')) {
                       e.preventDefault();
@@ -543,7 +575,6 @@ export default function RoomPage() {
                   }}
                 >
                   <div
-                    // Match local PlayerTile's inner style; subtle tweak: darker text for readability
                     style={{
                       padding: '0.5rem 1rem',
                       backgroundColor: '#4488f0ff',
@@ -552,13 +583,12 @@ export default function RoomPage() {
                       minWidth: '80px',
                       textAlign: 'center',
                       boxShadow: mine ? '0 0 0 2px rgba(0,0,0,0.1) inset' : undefined,
-                      opacity: 1,
                     }}
                   >
                     <span style={{ color: '#000', fontWeight: 550 }}>
                       {p.name}
                       {p.is_host ? ' (Host)' : ''}
-                      {mine ? ' • ' : ''}
+                      {mine ? ' • You' : ''}
                     </span>
                   </div>
                 </button>
@@ -652,12 +682,41 @@ export default function RoomPage() {
         />
       )}
 
-      {/* Name capture/change modal (opened automatically if not in room; or when clicking your tile) */}
+      {/* Name capture/change modal (if no stored name at refresh-time membership check) */}
       {showNameModal && (
         <NameModal
           title={editingName ? 'Change your name' : 'Set your name to join'}
           initial={editingName ? (mePlayerRow?.name ?? getStoredName() ?? '') : (getStoredName() ?? '')}
-          onSubmit={changeMyName}
+          onSubmit={async (name) => {
+            setStoredName(name);
+            if (roomId && meUserId) {
+              // join (or update) then reload the player list so RLS allows full visibility
+              const { data: existing } = await supabase
+                .from('room_players')
+                .select('id')
+                .eq('room_id', roomId)
+                .eq('user_id', meUserId)
+                .maybeSingle();
+              if (existing) {
+                await supabase.from('room_players').update({ name }).eq('id', existing.id);
+              } else {
+                await supabase.from('room_players').insert({
+                  room_id: roomId,
+                  user_id: meUserId,
+                  name,
+                  is_host: false,
+                });
+              }
+              // fetch players after joining to populate everyone (RLS)
+              const { data: list } = await supabase
+                .from('room_players')
+                .select('id, name, is_host, user_id, room_id')
+                .eq('room_id', roomId);
+              setPlayers(list || []);
+            }
+            setShowNameModal(false);
+            setEditingName(false);
+          }}
           onClose={editingName ? () => { setShowNameModal(false); setEditingName(false); } : undefined}
         />
       )}
