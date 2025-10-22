@@ -417,9 +417,9 @@ export default function RoomPage() {
         const isImp = p.user_id === imposterUserId;
         return {
           user_id: p.user_id,
-          secret: isImp ? '' : chosen.secret,                                // players see the word
-          hint: isImp && imposterGetsHint ? chosen.hint : '',                // imposter may see hint
-          theme: isImp && themeHintEnabled ? chosen.theme : '',              // imposter may see theme
+          secret: isImp ? '' : chosen.secret,
+          hint: isImp && imposterGetsHint ? chosen.hint : '',
+          theme: isImp && themeHintEnabled ? chosen.theme : '',
         };
       });
 
@@ -479,6 +479,12 @@ export default function RoomPage() {
     setEditingName(false);
   };
 
+  // When you click your tile, open the name modal prefilled with your current name
+  const onMyTileClick = () => {
+    setEditingName(true);
+    setShowNameModal(true);
+  };
+
   if (!roomId) {
     return (
       <div className="min-h-screen grid place-items-center">
@@ -496,41 +502,70 @@ export default function RoomPage() {
             <h1 className="text-2xl font-bold text-center flex-1">
               Room {String(code).toUpperCase()}
             </h1>
-            <div className="flex items-center gap-2">
-              {/* Change name */}
-              <button
-                className="text-sm px-3 py-1 rounded-lg border"
-                onClick={() => {
-                  setEditingName(true);
-                  setShowNameModal(true);
-                }}
-                title="Change your name"
-              >
-                {mePlayerRow?.name ? `You: ${mePlayerRow.name}` : 'Set name'}
-              </button>
-              {/* Leave room */}
-              <button
-                className="text-sm px-3 py-1 rounded-lg border"
-                onClick={() => leaveRoom().then(() => router.replace('/'))}
-                title="Leave room"
-              >
-                Leave
-              </button>
-            </div>
+            {/* Leave room */}
+            <button
+              className="text-sm px-3 py-1 rounded-lg border"
+              onClick={() => leaveRoom().then(() => router.replace('/'))}
+              title="Leave room"
+            >
+              Leave
+            </button>
           </div>
         </div>
 
-        {/* Players (realtime) */}
+        {/* Players (realtime) — styled like local PlayerTile; only my tile is clickable */}
         <div className="card p-4 sm:p-6">
           <h2 className="text-lg font-semibold mb-3 text-center">Players</h2>
-          <ul className="grid grid-cols-2 gap-2">
-            {players.map((p) => (
-              <li key={p.id} className="px-3 py-2 rounded bg-white shadow flex items-center justify-between">
-                <span>{p.name}</span>
-                {p.is_host && <span className="text-xs rounded px-2 py-1 bg-black text-white"> (Host)</span>}
-              </li>
-            ))}
-          </ul>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {players.map((p) => {
+              const mine = p.user_id === meUserId;
+              const onClick = mine ? onMyTileClick : undefined;
+
+              return (
+                <button
+                  key={p.id}
+                  onClick={onClick}
+                  title={mine ? 'Click to edit your name' : undefined}
+                  // Match local PlayerTile's outer button style
+                  style={{
+                    all: 'unset',
+                    cursor: mine ? 'pointer' : 'default',
+                    display: 'inline-block',
+                    margin: '0.25rem',
+                  }}
+                  // Add focus ring only if it's mine
+                  onKeyDown={(e) => {
+                    if (mine && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onMyTileClick();
+                    }
+                  }}
+                >
+                  <div
+                    // Match local PlayerTile's inner style; subtle tweak: darker text for readability
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#4488f0ff',
+                      borderRadius: '8px',
+                      border: '2px solid rgba(167, 167, 167, 1)',
+                      minWidth: '80px',
+                      textAlign: 'center',
+                      boxShadow: mine ? '0 0 0 2px rgba(0,0,0,0.1) inset' : undefined,
+                      opacity: 1,
+                    }}
+                  >
+                    <span style={{ color: '#000', fontWeight: 550 }}>
+                      {p.name}
+                      {p.is_host ? ' (Host)' : ''}
+                      {mine ? ' • ' : ''}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
           {players.length === 0 && (
             <p className="text-center text-sm text-gray-500 mt-2">Waiting for players…</p>
           )}
@@ -592,12 +627,9 @@ export default function RoomPage() {
         {status === 'ended' && (
           <div className="card p-4 sm:p-6 space-y-4 text-center">
             <h2 className="text-lg font-semibold">Game ended</h2>
-
-            {/* Show who the imposter was */}
             <p className="text-sm">
               Imposter: <b>{players.find((p) => p.user_id === imposterUserId)?.name ?? 'Unknown'}</b>
             </p>
-
             <p className="text-sm text-gray-600">You can restart with the same room.</p>
             {iAmHost ? (
               <button className="start-game-button" onClick={restartLobby}>
@@ -620,7 +652,7 @@ export default function RoomPage() {
         />
       )}
 
-      {/* Name capture/change modal */}
+      {/* Name capture/change modal (opened automatically if not in room; or when clicking your tile) */}
       {showNameModal && (
         <NameModal
           title={editingName ? 'Change your name' : 'Set your name to join'}
