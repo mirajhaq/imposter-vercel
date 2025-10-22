@@ -9,10 +9,11 @@ import ThemeTile from '@/components/ThemeTile';
 import ThemeEditorModal from '@/components/ThemeEditorModal';
 import ImposterHintToggle from '@/components/ImposterHintToggle';
 import ThemeHintToggle from '@/components/ThemeHintToggle';
+import OnlinePlayScreen from '@/components/OnlinePlayScreen';
 
 import { DEFAULT_WORDS, SPECIAL_WORDS } from '@/lib/words';
 
-const ALL_THEMES = Array.from(new Set(DEFAULT_WORDS.map(w => w.theme))).sort();
+const ALL_THEMES = Array.from(new Set(DEFAULT_WORDS.map((w) => w.theme))).sort();
 const SPECIAL_THEMES = Object.keys(SPECIAL_WORDS).sort();
 
 type Player = {
@@ -27,6 +28,13 @@ type OnlineState = {
   selectedThemes: string[];
   imposterGetsHint: boolean;
   themeHintEnabled: boolean;
+  phase?: 'reveal' | 'play';
+  order?: string[];
+  revealIndex?: number;
+  starter?: string | null;
+  // optional debug info:
+  imposterUserId?: string;
+  chosenWord?: { secret: string; hint: string; theme: string };
 };
 
 export default function RoomPage() {
@@ -38,15 +46,20 @@ export default function RoomPage() {
   const [status, setStatus] = useState<'lobby' | 'playing' | 'ended'>('lobby');
   const [players, setPlayers] = useState<Player[]>([]);
 
-  // Host-config (mirrors room_state.state)
+  // Host-config + online flow state (mirrors room_state.state)
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [imposterGetsHint, setImposterGetsHint] = useState(false);
   const [themeHintEnabled, setThemeHintEnabled] = useState(false);
 
+  const [phase, setPhase] = useState<'reveal' | 'play'>('reveal');
+  const [order, setOrder] = useState<string[]>([]);
+  const [revealIndex, setRevealIndex] = useState<number>(0);
+  const [starter, setStarter] = useState<string | null>(null);
+
   const [showThemeEditor, setShowThemeEditor] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // 1) Ensure anon auth before any reads/subscriptions (RLS-safe)
+  // --- AUTH FIRST (RLS requires it)
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
@@ -56,7 +69,7 @@ export default function RoomPage() {
     })();
   }, []);
 
-  // 2) Initial load once we have auth
+  // --- Initial load
   useEffect(() => {
     if (!meUserId || !code) return;
 
@@ -75,7 +88,6 @@ export default function RoomPage() {
       setRoomId(room.id);
       setStatus(room.status);
 
-      // players
       const { data: list } = await supabase
         .from('room_players')
         .select('id, name, is_host, user_id, room_id')
@@ -84,7 +96,6 @@ export default function RoomPage() {
 
       setPlayers(list || []);
 
-      // state
       const { data: st } = await supabase
         .from('room_state')
         .select('state')
@@ -95,108 +106,93 @@ export default function RoomPage() {
       setSelectedThemes(Array.isArray(s.selectedThemes) ? s.selectedThemes : []);
       setImposterGetsHint(!!s.imposterGetsHint);
       setThemeHintEnabled(!!s.themeHintEnabled);
+      if (s.phase) setPhase(s.phase);
+      if (s.order) setOrder(s.order);
+      if (typeof s.revealIndex === 'number') setRevealIndex(s.revealIndex);
+      if (s.starter !== undefined) setStarter(s.starter ?? null);
     })();
   }, [meUserId, code, router]);
 
-  // 3) Realtime: presence + postgres_changes
+  // --- Realtime subscriptions (rooms, room_players, room_state)
   useEffect(() => {
     if (!roomId || !meUserId) return;
 
-    // A) Presence (bonus UI feel; includes my name so others can show "online now")
-    const me = players.find(p => p.user_id === meUserId);
-    const presence = supabase.channel(`presence:room:${roomId}`, {
-      config: { presence: { key: meUserId } },
-    });
-
-    presence
-      .on('presence', { event: 'sync' }, () => {
-        // no-op; could read presence state here if you want "online dots"
-      })
-      .subscribe(status => {
-        if (status === 'SUBSCRIBED') {
-          presence.track({
-            user_id: meUserId,
-            name: me?.name ?? 'Player',
-            online_at: new Date().toISOString(),
-          });
-        }
-      });
-
-    // Helpers to upsert/remove in local state without refetch
-    const upsertPlayer = (p: Player) =>
-      setPlayers(prev => {
-        const idx = prev.findIndex(x => x.id === p.id);
-        if (idx === -1) return [...prev, p].sort((a, b) => a.name.localeCompare(b.name));
-        const next = prev.slice();
-        next[idx] = p;
-        return next;
-      });
-
-    const removePlayer = (id: string) =>
-      setPlayers(prev => prev.filter(x => x.id !== id));
-
-    // B) DB change streams
     const db = supabase
       .channel(`db:room:${roomId}`)
-
-      // rooms status (start/end)
-      .on('postgres_changes',
+      .on(
+        'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
-        (payload: any) => setStatus(payload.new.status))
-
-      // players: INSERT/UPDATE/DELETE
-      .on('postgres_changes',
+        (payload: any) => setStatus(payload.new.status)
+      )
+      .on(
+        'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'room_players', filter: `room_id=eq.${roomId}` },
-        (payload: any) => {
-          const p = payload.new as Player;
-          upsertPlayer(p);
-        })
-      .on('postgres_changes',
+        (payload: any) =>
+          setPlayers((prev) => {
+            const p = payload.new as Player;
+            if (prev.some((x) => x.id === p.id)) return prev;
+            return [...prev, p];
+          })
+      )
+      .on(
+        'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'room_players', filter: `room_id=eq.${roomId}` },
-        (payload: any) => {
-          const p = payload.new as Player;
-          upsertPlayer(p);
-        })
-      .on('postgres_changes',
+        (payload: any) =>
+          setPlayers((prev) => {
+            const p = payload.new as Player;
+            const idx = prev.findIndex((x) => x.id === p.id);
+            if (idx === -1) return prev;
+            const next = prev.slice();
+            next[idx] = p;
+            return next;
+          })
+      )
+      .on(
+        'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'room_players', filter: `room_id=eq.${roomId}` },
-        (payload: any) => {
-          const oldRow = payload.old as Player;
-          removePlayer(oldRow.id);
-        })
-
-      // room_state: INSERT/UPDATE (host options)
-      .on('postgres_changes',
+        (payload: any) => setPlayers((prev) => prev.filter((x) => x.id !== (payload.old as Player).id))
+      )
+      .on(
+        'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'room_state', filter: `room_id=eq.${roomId}` },
         (payload: any) => {
           const s = (payload.new.state as OnlineState) || {};
           setSelectedThemes(Array.isArray(s.selectedThemes) ? s.selectedThemes : []);
           setImposterGetsHint(!!s.imposterGetsHint);
           setThemeHintEnabled(!!s.themeHintEnabled);
-        })
-      .on('postgres_changes',
+          setPhase(s.phase ?? 'reveal');
+          setOrder(s.order ?? []);
+          setRevealIndex(s.revealIndex ?? 0);
+          setStarter(s.starter ?? null);
+        }
+      )
+      .on(
+        'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'room_state', filter: `room_id=eq.${roomId}` },
         (payload: any) => {
           const s = (payload.new.state as OnlineState) || {};
           setSelectedThemes(Array.isArray(s.selectedThemes) ? s.selectedThemes : []);
           setImposterGetsHint(!!s.imposterGetsHint);
           setThemeHintEnabled(!!s.themeHintEnabled);
-        })
-
+          setPhase(s.phase ?? 'reveal');
+          setOrder(s.order ?? []);
+          setRevealIndex(s.revealIndex ?? 0);
+          setStarter(s.starter ?? null);
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(db);
-      supabase.removeChannel(presence);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, meUserId]); // (don't depend on players here; presence payload uses latest name next render)
+  }, [roomId, meUserId]);
 
   const iAmHost = useMemo(() => {
     if (!meUserId) return false;
-    return players.some(p => p.user_id === meUserId && p.is_host);
+    return players.some((p) => p.user_id === meUserId && p.is_host);
   }, [players, meUserId]);
 
-  // Host: push setup changes to room_state
+  // --- Host pushes setup changes into room_state
   const updateRoomState = useCallback(
     async (patch: Partial<OnlineState>) => {
       if (!roomId) return;
@@ -206,6 +202,10 @@ export default function RoomPage() {
           selectedThemes,
           imposterGetsHint,
           themeHintEnabled,
+          phase,
+          order,
+          revealIndex,
+          starter,
           ...patch,
         };
         await supabase
@@ -216,43 +216,98 @@ export default function RoomPage() {
         setBusy(false);
       }
     },
-    [roomId, selectedThemes, imposterGetsHint, themeHintEnabled]
+    [roomId, selectedThemes, imposterGetsHint, themeHintEnabled, phase, order, revealIndex, starter]
   );
 
   const toggleTheme = (t: string) => {
-    const next = selectedThemes.includes(t)
-      ? selectedThemes.filter(x => x !== t)
-      : [...selectedThemes, t];
+    const next = selectedThemes.includes(t) ? selectedThemes.filter((x) => x !== t) : [...selectedThemes, t];
     setSelectedThemes(next);
     updateRoomState({ selectedThemes: next });
   };
-
   const onToggleImposterHint = (v: boolean) => {
     setImposterGetsHint(v);
     updateRoomState({ imposterGetsHint: v });
   };
-
   const onToggleThemeHint = (v: boolean) => {
     setThemeHintEnabled(v);
     updateRoomState({ themeHintEnabled: v });
   };
 
+  // Helpers for word assignment
+  const buildWordPool = (themes: string[]) => {
+    const base = DEFAULT_WORDS.filter((w) => themes.length === 0 || themes.includes(w.theme));
+    const specials = Object.entries(SPECIAL_WORDS)
+      .filter(([theme]) => themes.includes(theme))
+      .flatMap(([, arr]) => arr);
+    return [...base, ...specials];
+  };
+
+  // --- Start game: assign one word to all, pick one imposter, init reveal state
   const startGame = async () => {
-    if (!code) return;
+    if (!roomId || !code) return;
     setBusy(true);
     try {
-      const snapshot: OnlineState = { selectedThemes, imposterGetsHint, themeHintEnabled };
+      const list = players;
+      if (list.length < 2) throw new Error('Need at least 2 players');
+
+      // 1) Choose ONE word from the selected themes
+      const pool = buildWordPool(selectedThemes);
+      if (pool.length === 0) throw new Error('No words available for the selected themes');
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+
+      // 2) Choose ONE imposter at random
+      const imposterUserId = list[Math.floor(Math.random() * list.length)].user_id;
+
+      // 3) Build per-player secret payload from the single chosen word
+      const secretsPayload = list.map((p) => {
+        const isImp = p.user_id === imposterUserId;
+        return {
+          user_id: p.user_id,
+          secret: isImp ? '' : chosen.secret,                                // players see the word
+          hint: isImp && imposterGetsHint ? chosen.hint : '',                // imposter may see hint
+          theme: isImp && themeHintEnabled ? chosen.theme : '',              // imposter may see theme
+        };
+      });
+
+      // 4) Write secrets via SECURITY DEFINER RPC (RLS off inside)
+      const { error: assignErr } = await supabase.rpc('assign_secrets', {
+        room_code: String(code).toUpperCase(),
+        secrets: secretsPayload,
+      });
+      if (assignErr) throw assignErr;
+
+      // 5) Initialize reveal phase and persist chosenWord/imposter for reference
+      const initState: OnlineState & {
+        imposterUserId: string;
+        chosenWord: { secret: string; hint: string; theme: string };
+      } = {
+        selectedThemes,
+        imposterGetsHint,
+        themeHintEnabled,
+        phase: 'reveal',
+        order: list.map((p) => p.user_id),
+        revealIndex: 0,
+        starter: null,
+        imposterUserId,
+        chosenWord: { secret: chosen.secret, hint: chosen.hint, theme: chosen.theme },
+      };
+
       const { error } = await supabase.rpc('start_game', {
         room_code: String(code).toUpperCase(),
-        new_state: snapshot,
+        new_state: initState,
       });
       if (error) throw error;
-      // status flips via realtime
     } catch (e: any) {
       alert(e.message || 'Failed to start game');
     } finally {
       setBusy(false);
     }
+  };
+
+  // Host-only: restart lobby (clear state/secrets, keep players)
+  const restartLobby = async () => {
+    const { error } = await supabase.rpc('restart_lobby', { room_code: String(code).toUpperCase() });
+    if (error) alert(error.message || 'Failed to restart');
   };
 
   if (!roomId) {
@@ -266,6 +321,7 @@ export default function RoomPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-gray-200 p-4 sm:p-6">
       <div className="max-w-2xl mx-auto space-y-6">
+        {/* Header */}
         <div className="card p-4 sm:p-6">
           <h1 className="text-2xl font-bold text-center">Room {String(code).toUpperCase()}</h1>
         </div>
@@ -277,7 +333,7 @@ export default function RoomPage() {
             {players.map((p) => (
               <li key={p.id} className="px-3 py-2 rounded bg-white shadow flex items-center justify-between">
                 <span>{p.name}</span>
-                {p.is_host && <span className="text-xs rounded px-2 py-1 bg-black text-white">Host</span>}
+                {p.is_host && <span className="text-xs rounded px-2 py-1 bg-black text-white"> (Host)</span>}
               </li>
             ))}
           </ul>
@@ -286,7 +342,7 @@ export default function RoomPage() {
           )}
         </div>
 
-        {/* Host setup (themes + hint toggles) */}
+        {/* Lobby / Playing / Ended */}
         {status === 'lobby' && (
           <div className="card p-4 sm:p-6 space-y-6">
             <h2 className="text-lg font-semibold text-center">Game Setup</h2>
@@ -309,11 +365,11 @@ export default function RoomPage() {
             <div className={`flex flex-col sm:flex-row gap-4 justify-center ${iAmHost ? '' : 'opacity-60'}`}>
               <ImposterHintToggle
                 imposterGetsHint={imposterGetsHint}
-                setImposterGetsHint={iAmHost ? onToggleImposterHint : () => {}}
+                setImposterGetsHint={iAmHost ? (v) => onToggleImposterHint(v) : () => {}}
               />
               <ThemeHintToggle
                 themeHintEnabled={themeHintEnabled}
-                setThemeHintEnabled={iAmHost ? onToggleThemeHint : () => {}}
+                setThemeHintEnabled={iAmHost ? (v) => onToggleThemeHint(v) : () => {}}
               />
             </div>
 
@@ -330,8 +386,26 @@ export default function RoomPage() {
         )}
 
         {status === 'playing' && (
-          <div className="card p-4 sm:p-6 text-center">
-            <p className="text-sm text-gray-600">Game in progress…</p>
+          <OnlinePlayScreen
+            roomId={roomId}
+            roomCode={String(code).toUpperCase()}
+            meUserId={meUserId!}
+            players={players.map((p) => ({ user_id: p.user_id, name: p.name, is_host: p.is_host }))}
+            state={{ selectedThemes, imposterGetsHint, themeHintEnabled, phase, order, revealIndex, starter }}
+          />
+        )}
+
+        {status === 'ended' && (
+          <div className="card p-4 sm:p-6 space-y-4 text-center">
+            <h2 className="text-lg font-semibold">Game ended</h2>
+            <p className="text-sm text-gray-600">You can restart with the same room.</p>
+            {iAmHost ? (
+              <button className="start-game-button" onClick={restartLobby}>
+                Restart (back to lobby)
+              </button>
+            ) : (
+              <p className="text-xs text-gray-500">Waiting for host to restart…</p>
+            )}
           </div>
         )}
       </div>
