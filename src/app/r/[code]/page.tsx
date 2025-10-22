@@ -37,6 +37,75 @@ type OnlineState = {
   chosenWord?: { secret: string; hint: string; theme: string };
 };
 
+// ---- Local name storage helpers (localStorage, with cookie fallback) ----
+const NAME_KEY = 'party_name';
+const getStoredName = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const v = localStorage.getItem(NAME_KEY);
+    if (v) return v;
+    const m = document.cookie.match(new RegExp('(^| )' + NAME_KEY + '=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : null;
+  } catch {
+    return null;
+  }
+};
+const setStoredName = (name: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(NAME_KEY, name);
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    document.cookie = `${NAME_KEY}=${encodeURIComponent(name)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+  } catch {}
+};
+
+// ---- Lightweight inline modal for name capture/change ----
+function NameModal({
+  initial,
+  onSubmit,
+  onClose,
+  title = 'Set your name',
+}: {
+  initial?: string;
+  onSubmit: (name: string) => void;
+  onClose?: () => void;
+  title?: string;
+}) {
+  const [name, setName] = useState(initial ?? '');
+  const canSave = name.trim().length > 0 && name.trim().length <= 30;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 grid place-items-center z-[1000]">
+      <div className="bg-white rounded-2xl shadow-xl p-5 w-full max-w-sm">
+        <h3 className="text-lg font-semibold mb-3 text-center">{title}</h3>
+        <input
+          className="w-full border rounded-lg px-3 py-2 outline-none"
+          placeholder="e.g. Alex"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={30}
+          autoFocus
+        />
+        <div className="flex gap-2 justify-end mt-4">
+          {onClose && (
+            <button className="px-3 py-2 rounded-lg border" onClick={onClose}>
+              Cancel
+            </button>
+          )}
+          <button
+            className="px-3 py-2 rounded-lg bg-black text-white disabled:opacity-50"
+            disabled={!canSave}
+            onClick={() => onSubmit(name.trim())}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
   const router = useRouter();
@@ -58,6 +127,12 @@ export default function RoomPage() {
 
   const [showThemeEditor, setShowThemeEditor] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const [imposterUserId, setImposterUserId] = useState<string | null>(null);
+
+  // name modal state
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [editingName, setEditingName] = useState(false);
 
   // --- AUTH FIRST (RLS requires it)
   useEffect(() => {
@@ -110,6 +185,39 @@ export default function RoomPage() {
       if (s.order) setOrder(s.order);
       if (typeof s.revealIndex === 'number') setRevealIndex(s.revealIndex);
       if (s.starter !== undefined) setStarter(s.starter ?? null);
+      if (s.imposterUserId !== undefined) setImposterUserId(s.imposterUserId ?? null);
+
+      // ---- Ensure I'm in the room with a remembered name ----
+      const meInRoom = (list || []).some((p) => p.user_id === meUserId);
+      if (!meInRoom) {
+        const stored = getStoredName();
+        if (stored && stored.trim()) {
+          try {
+            const { error: joinErr } = await supabase
+              .from('room_players')
+              .insert({
+                room_id: room.id,
+                user_id: meUserId,
+                name: stored.trim(),
+                is_host: false,
+              });
+            if (joinErr) {
+              // optionally log joinErr
+            }
+          } catch {
+            // network error; ignore
+          }
+        } else {
+          // ask once for a name, then save + join
+          setShowNameModal(true);
+        }
+      } else {
+        // If I'm already in the room and local storage is empty, store my current DB name for next time
+        const meRow = (list || []).find((p) => p.user_id === meUserId);
+        if (meRow && !getStoredName()) {
+          setStoredName(meRow.name);
+        }
+      }
     })();
   }, [meUserId, code, router]);
 
@@ -131,6 +239,7 @@ export default function RoomPage() {
           setPlayers((prev) => {
             const p = payload.new as Player;
             if (prev.some((x) => x.id === p.id)) return prev;
+            if (p.user_id === meUserId && !getStoredName()) setStoredName(p.name);
             return [...prev, p];
           })
       )
@@ -144,6 +253,7 @@ export default function RoomPage() {
             if (idx === -1) return prev;
             const next = prev.slice();
             next[idx] = p;
+            if (p.user_id === meUserId) setStoredName(p.name);
             return next;
           })
       )
@@ -164,6 +274,7 @@ export default function RoomPage() {
           setOrder(s.order ?? []);
           setRevealIndex(s.revealIndex ?? 0);
           setStarter(s.starter ?? null);
+          setImposterUserId(s.imposterUserId ?? null);
         }
       )
       .on(
@@ -178,6 +289,7 @@ export default function RoomPage() {
           setOrder(s.order ?? []);
           setRevealIndex(s.revealIndex ?? 0);
           setStarter(s.starter ?? null);
+          setImposterUserId(s.imposterUserId ?? null);
         }
       )
       .subscribe();
@@ -191,6 +303,47 @@ export default function RoomPage() {
     if (!meUserId) return false;
     return players.some((p) => p.user_id === meUserId && p.is_host);
   }, [players, meUserId]);
+
+  const mePlayerRow = useMemo(
+    () => players.find((p) => p.user_id === meUserId) || null,
+    [players, meUserId]
+  );
+
+  // --- Leave room helper (used on back/close/unmount) ---
+  const leaveRoom = useCallback(async () => {
+    if (!roomId || !meUserId) return;
+    try {
+      await supabase
+        .from('room_players')
+        .delete()
+        .eq('room_id', roomId)
+        .eq('user_id', meUserId);
+    } catch {
+      // ignore
+    }
+  }, [roomId, meUserId]);
+
+  // Try to remove me when navigating away / closing the tab / hiding the page
+  useEffect(() => {
+    if (!roomId || !meUserId) return;
+
+    const handlePageHide = () => { void leaveRoom(); };
+    const handleBeforeUnload = () => { void leaveRoom(); };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') void leaveRoom();
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      void leaveRoom(); // SPA unmount
+    };
+  }, [roomId, meUserId, leaveRoom]);
 
   // --- Host pushes setup changes into room_state
   const updateRoomState = useCallback(
@@ -206,6 +359,7 @@ export default function RoomPage() {
           order,
           revealIndex,
           starter,
+          imposterUserId: imposterUserId ?? undefined,
           ...patch,
         };
         await supabase
@@ -216,7 +370,7 @@ export default function RoomPage() {
         setBusy(false);
       }
     },
-    [roomId, selectedThemes, imposterGetsHint, themeHintEnabled, phase, order, revealIndex, starter]
+    [roomId, selectedThemes, imposterGetsHint, themeHintEnabled, phase, order, revealIndex, starter, imposterUserId]
   );
 
   const toggleTheme = (t: string) => {
@@ -310,6 +464,21 @@ export default function RoomPage() {
     if (error) alert(error.message || 'Failed to restart');
   };
 
+  // Change my name (UI + DB + local storage)
+  const changeMyName = async (newName: string) => {
+    if (!roomId || !meUserId) return;
+    setStoredName(newName);
+    if (mePlayerRow) {
+      await supabase.from('room_players').update({ name: newName }).eq('id', mePlayerRow.id);
+    } else {
+      await supabase
+        .from('room_players')
+        .insert({ room_id: roomId, user_id: meUserId, name: newName, is_host: false });
+    }
+    setShowNameModal(false);
+    setEditingName(false);
+  };
+
   if (!roomId) {
     return (
       <div className="min-h-screen grid place-items-center">
@@ -323,7 +492,32 @@ export default function RoomPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="card p-4 sm:p-6">
-          <h1 className="text-2xl font-bold text-center">Room {String(code).toUpperCase()}</h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-2xl font-bold text-center flex-1">
+              Room {String(code).toUpperCase()}
+            </h1>
+            <div className="flex items-center gap-2">
+              {/* Change name */}
+              <button
+                className="text-sm px-3 py-1 rounded-lg border"
+                onClick={() => {
+                  setEditingName(true);
+                  setShowNameModal(true);
+                }}
+                title="Change your name"
+              >
+                {mePlayerRow?.name ? `You: ${mePlayerRow.name}` : 'Set name'}
+              </button>
+              {/* Leave room */}
+              <button
+                className="text-sm px-3 py-1 rounded-lg border"
+                onClick={() => leaveRoom().then(() => router.replace('/'))}
+                title="Leave room"
+              >
+                Leave
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Players (realtime) */}
@@ -398,6 +592,12 @@ export default function RoomPage() {
         {status === 'ended' && (
           <div className="card p-4 sm:p-6 space-y-4 text-center">
             <h2 className="text-lg font-semibold">Game ended</h2>
+
+            {/* Show who the imposter was */}
+            <p className="text-sm">
+              Imposter: <b>{players.find((p) => p.user_id === imposterUserId)?.name ?? 'Unknown'}</b>
+            </p>
+
             <p className="text-sm text-gray-600">You can restart with the same room.</p>
             {iAmHost ? (
               <button className="start-game-button" onClick={restartLobby}>
@@ -417,6 +617,16 @@ export default function RoomPage() {
           specialThemes={SPECIAL_THEMES}
           toggleTheme={toggleTheme}
           onClose={() => setShowThemeEditor(false)}
+        />
+      )}
+
+      {/* Name capture/change modal */}
+      {showNameModal && (
+        <NameModal
+          title={editingName ? 'Change your name' : 'Set your name to join'}
+          initial={editingName ? (mePlayerRow?.name ?? getStoredName() ?? '') : (getStoredName() ?? '')}
+          onSubmit={changeMyName}
+          onClose={editingName ? () => { setShowNameModal(false); setEditingName(false); } : undefined}
         />
       )}
     </div>

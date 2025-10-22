@@ -110,21 +110,21 @@ export default function SetupScreen({
 
         {/* Online (beta) - moved up */}
         <div className="card p-4 sm:p-6">
-          <h2 className="text-center font-semibold mb-2">Online</h2>
-          <div className="flex gap-4 justify-center">
+          <h2 className="text-center font-semibold mb-4">Online</h2>
+          <div className="grid grid-cols-2 gap-6">
             <button
               onClick={hostOnlineGame}
               disabled={onlineBusy}
-              className="start-game-button"
+              className="online-game-button"
             >
-              {onlineBusy ? 'Working...' : 'Host Online Game'}
+              {onlineBusy ? 'Working...' : 'Host'}
             </button>
             <button
               onClick={joinOnlineGame}
               disabled={onlineBusy}
-              className="start-game-button"
+              className="online-game-button"
             >
-              {onlineBusy ? 'Working...' : 'Join Online Game'}
+              {onlineBusy ? 'Working...' : 'Join'}
             </button>
           </div>
           <p className="text-center text-xs text-gray-500 mt-3">
