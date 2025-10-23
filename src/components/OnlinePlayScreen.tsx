@@ -223,7 +223,8 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
         {/* Host-only End Game button during play */}
         {iAmHost && (
           <div className="mt-3">
-            <button className="start-game-button" onClick={endGame}>
+            <button 
+              className="end-game-button" onClick={endGame}>
               End Game
             </button>
           </div>
@@ -238,3 +239,4 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
     </div>
   );
 }
+
