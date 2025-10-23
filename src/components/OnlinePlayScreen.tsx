@@ -19,7 +19,7 @@ type PlayerLite = { user_id: string; name: string; is_host: boolean };
 
 type Props = {
   roomId: string;
-  roomCode: string;        // NEW
+  roomCode: string;
   meUserId: string;
   players: PlayerLite[];
   state: OnlineState; // live via room_state subscription in page
@@ -37,6 +37,23 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
 
   const turnUserId = state.order?.[state.revealIndex ?? 0] ?? null;
   const isMyTurn = state.phase === 'reveal' && turnUserId === meUserId;
+
+  // Map for quick lookup
+  const playerById = useMemo(() => {
+    const m = new Map<string, PlayerLite>();
+    players.forEach((p) => m.set(p.user_id, p));
+    return m;
+  }, [players]);
+
+  // Starter-first order for play phase
+  const playOrder = useMemo(() => {
+    const base = state.order ?? [];
+    if (base.length === 0) return [];
+    if (!state.starter) return base; // fallback: show original order
+    const idx = base.indexOf(state.starter);
+    if (idx === -1) return base;
+    return [...base.slice(idx), ...base.slice(0, idx)];
+  }, [state.order, state.starter]);
 
   useEffect(() => {
     (async () => {
@@ -159,7 +176,7 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
 
         <ul className="grid grid-cols-2 gap-2 mt-4">
           {(state.order ?? []).map((uid, i) => {
-            const p = players.find((x) => x.user_id === uid);
+            const p = playerById.get(uid);
             const isNow = i === (state.revealIndex ?? 0);
             return (
               <li
@@ -177,6 +194,7 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
 
   if (state.phase === 'play') {
     const starterName = players.find((p) => p.user_id === state.starter)?.name ?? 'Someone';
+
     return (
       <div className="card p-4 sm:p-6 space-y-4 text-center">
         <h2 className="text-lg font-semibold">Let’s play!</h2>
@@ -184,9 +202,27 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
           Starting player: <b>{starterName}</b>
         </p>
 
+        {/* Turn order list (starter first, then clockwise) */}
+        <ul className="mt-2 space-y-2 max-w-sm mx-auto text-left">
+          {playOrder.map((uid, idx) => {
+            const p = playerById.get(uid);
+            return (
+              <li
+                key={uid}
+                className={`px-3 py-2 rounded shadow flex items-center justify-between ${
+                  idx === 0 ? 'bg-black text-white' : 'bg-white'
+                }`}
+              >
+                <span className="font-medium">{p?.name ?? 'Player'}</span>
+                {idx === 0 && <span className="ml-2 text-xs opacity-80"></span>}
+              </li>
+            );
+          })}
+        </ul>
+
         {/* Host-only End Game button during play */}
         {iAmHost && (
-          <div className="mt-2">
+          <div className="mt-3">
             <button className="start-game-button" onClick={endGame}>
               End Game
             </button>

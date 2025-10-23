@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
 import ThemeTile from '@/components/ThemeTile';
@@ -59,7 +59,7 @@ const setStoredName = (name: string) => {
   } catch {}
 };
 
-// ---- Lightweight inline modal for name capture/change ----
+// ---- Lightweight inline modal for name capture/change (styled like PlayerEditorModal) ----
 function NameModal({
   initial,
   onSubmit,
@@ -74,31 +74,132 @@ function NameModal({
   const [name, setName] = useState(initial ?? '');
   const canSave = name.trim().length > 0 && name.trim().length <= 30;
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) onClose();
+      if ((e.key === 'Enter' || e.key === 'NumpadEnter') && canSave) onSubmit(name.trim());
+    };
+    document.addEventListener('keydown', onKey);
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [canSave, name, onClose, onSubmit]);
+
   return (
-    <div className="fixed inset-0 bg-black/40 grid place-items-center z-[1000]">
-      <div className="bg-white rounded-2xl shadow-xl p-5 w-full max-w-sm">
-        <h3 className="text-lg font-semibold mb-3 text-center">{title}</h3>
-        <input
-          className="w-full border rounded-lg px-3 py-2 outline-none"
-          placeholder="e.g. Alex"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={30}
-          autoFocus
-        />
-        <div className="flex gap-2 justify-end mt-4">
-          {onClose && (
-            <button className="px-3 py-2 rounded-lg border" onClick={onClose}>
-              Cancel
-            </button>
-          )}
-          <button
-            className="px-3 py-2 rounded-lg bg-black text-white disabled:opacity-50"
-            disabled={!canSave}
-            onClick={() => onSubmit(name.trim())}
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        zIndex: 50,
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onClose) onClose();
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: '#f1ededff',
+          borderRadius: '12px',
+          maxWidth: '28rem',
+          width: '100%',
+          maxHeight: '80vh',
+          overflowY: 'auto',
+        }}
+      >
+        <div style={{ padding: '1.5rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '1.5rem',
+            }}
           >
-            Save
-          </button>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b' }}>{title}</h3>
+            {onClose && (
+              <button
+                onClick={onClose}
+                style={{
+                  color: '#000000ff',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '1.5rem',
+                  lineHeight: 1,
+                }}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Alex"
+            maxLength={30}
+            autoFocus
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              border: '2px solid #000000ff',
+              borderRadius: '0.375rem',
+              outline: 'none',
+            }}
+          />
+
+          <div
+            style={{
+              marginTop: '1.25rem',
+              display: 'flex',
+              gap: '0.75rem',
+              justifyContent: 'flex-end',
+            }}
+          >
+            {onClose && (
+              <button
+                onClick={onClose}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #000',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              onClick={() => onSubmit(name.trim())}
+              disabled={!canSave}
+              style={{
+                padding: '0.5rem 0.75rem',
+                backgroundColor: '#1f1313ff',
+                color: 'white',
+                borderRadius: '0.375rem',
+                border: 'none',
+                cursor: canSave ? 'pointer' : 'not-allowed',
+                opacity: canSave ? 1 : 0.6,
+                fontWeight: 500,
+              }}
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -107,7 +208,6 @@ function NameModal({
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
-  const router = useRouter();
 
   const [meUserId, setMeUserId] = useState<string | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -133,6 +233,12 @@ export default function RoomPage() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [editingName, setEditingName] = useState(false);
 
+  // ---- single source of truth for player ordering ----
+  const sortPlayers = useCallback((arr: Player[]) => {
+    // Using stable lexicographic id order keeps consistent with DB insertion order if ids are monotonic
+    return [...arr].sort((a, b) => a.id.localeCompare(b.id));
+  }, []);
+
   // --- AUTH FIRST (RLS requires it)
   useEffect(() => {
     (async () => {
@@ -147,7 +253,6 @@ export default function RoomPage() {
   const ensureSelfMembership = useCallback(
     async (rid: string) => {
       if (!meUserId) return;
-      // Check DB directly (don’t rely on local state)
       const { data: existing } = await supabase
         .from('room_players')
         .select('id')
@@ -158,7 +263,6 @@ export default function RoomPage() {
       if (existing) return;
 
       const stored = (getStoredName() || 'Player').trim();
-      // If no stored name, show modal to capture it before we can see others (due to RLS)
       if (!stored) {
         setShowNameModal(true);
         return;
@@ -168,7 +272,6 @@ export default function RoomPage() {
         .from('room_players')
         .insert({ room_id: rid, user_id: meUserId, name: stored, is_host: false });
 
-      // ignore unique race (e.g., parallel tab)
       if (insertErr && (insertErr as any).code !== '23505') {
         // optional: console.warn(insertErr);
       }
@@ -189,23 +292,22 @@ export default function RoomPage() {
 
       if (error || !room) {
         alert('Room not found');
-        router.replace('/');
+        window.location.replace('/');
         return;
       }
       setRoomId(room.id);
       setStatus(room.status);
 
-      // CRITICAL: ensure I'm a member BEFORE selecting players (so RLS will allow seeing others)
       await ensureSelfMembership(room.id);
 
-      // Now load players and state
+      // Players — always order by id (and sort defensively)
       const { data: list } = await supabase
         .from('room_players')
         .select('id, name, is_host, user_id, room_id')
         .eq('room_id', room.id)
         .order('id', { ascending: true });
 
-      setPlayers(list || []);
+      setPlayers(sortPlayers(list || []));
 
       const { data: st } = await supabase
         .from('room_state')
@@ -227,7 +329,7 @@ export default function RoomPage() {
       const meRow = (list || []).find((p) => p.user_id === meUserId);
       if (meRow && !getStoredName()) setStoredName(meRow.name);
     })();
-  }, [meUserId, code, router, ensureSelfMembership]);
+  }, [meUserId, code, ensureSelfMembership, sortPlayers]);
 
   // --- Realtime subscriptions (rooms, room_players, room_state)
   useEffect(() => {
@@ -248,7 +350,7 @@ export default function RoomPage() {
             const p = payload.new as Player;
             if (prev.some((x) => x.id === p.id)) return prev;
             if (p.user_id === meUserId && !getStoredName()) setStoredName(p.name);
-            return [...prev, p];
+            return sortPlayers([...prev, p]); // ✅ keep order stable
           })
       )
       .on(
@@ -262,13 +364,13 @@ export default function RoomPage() {
             const next = prev.slice();
             next[idx] = p;
             if (p.user_id === meUserId) setStoredName(p.name);
-            return next;
+            return sortPlayers(next); // ✅ preserve sorting after updates
           })
       )
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'room_players', filter: `room_id=eq.${roomId}` },
-        (payload: any) => setPlayers((prev) => prev.filter((x) => x.id !== (payload.old as Player).id))
+        (payload: any) => setPlayers((prev) => sortPlayers(prev.filter((x) => x.id !== (payload.old as Player).id)))
       )
       .on(
         'postgres_changes',
@@ -305,7 +407,7 @@ export default function RoomPage() {
     return () => {
       supabase.removeChannel(db);
     };
-  }, [roomId, meUserId]);
+  }, [roomId, meUserId, sortPlayers]);
 
   const iAmHost = useMemo(() => {
     if (!meUserId) return false;
@@ -539,7 +641,7 @@ export default function RoomPage() {
             {/* Leave room */}
             <button
               className="text-sm px-3 py-1 rounded-lg border"
-              onClick={() => leaveRoom().then(() => router.replace('/'))}
+              onClick={() => leaveRoom().then(() => window.location.replace('/'))}
               title="Leave room"
             >
               Leave
@@ -577,7 +679,7 @@ export default function RoomPage() {
                   <div
                     style={{
                       padding: '0.5rem 1rem',
-                      backgroundColor: '#4488f0ff',
+                      backgroundColor: mine ? '#4CAF50' : '#76869eff',
                       borderRadius: '8px',
                       border: '2px solid rgba(167, 167, 167, 1)',
                       minWidth: '80px',
@@ -588,7 +690,6 @@ export default function RoomPage() {
                     <span style={{ color: '#000', fontWeight: 550 }}>
                       {p.name}
                       {p.is_host ? ' (Host)' : ''}
-                      {mine ? ' • You' : ''}
                     </span>
                   </div>
                 </button>
@@ -707,12 +808,13 @@ export default function RoomPage() {
                   is_host: false,
                 });
               }
-              // fetch players after joining to populate everyone (RLS)
+              // fetch players after joining to populate everyone (RLS) — always ordered + sorted
               const { data: list } = await supabase
                 .from('room_players')
                 .select('id, name, is_host, user_id, room_id')
-                .eq('room_id', roomId);
-              setPlayers(list || []);
+                .eq('room_id', roomId)
+                .order('id', { ascending: true });
+              setPlayers(sortPlayers(list || []));
             }
             setShowNameModal(false);
             setEditingName(false);
