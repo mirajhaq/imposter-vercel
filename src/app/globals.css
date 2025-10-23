@@ -434,3 +434,11 @@ html, body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Imposter label (reveal phase) */
+.imposter-label {
+  font-weight: 600;            /* extra bold */
+  color: #dc2626;              /* strong red */
+  font-size: 1.2rem;          /* ~text-xl */
+  line-height: 1.75rem;
+}

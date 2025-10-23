@@ -1,4 +1,3 @@
-// src/components/OnlinePlayScreen.tsx
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -12,7 +11,6 @@ type OnlineState = {
   order?: string[];
   revealIndex?: number;
   starter?: string | null;
-  // (optional) imposterUserId?: string
 };
 
 type PlayerLite = { user_id: string; name: string; is_host: boolean };
@@ -22,12 +20,13 @@ type Props = {
   roomCode: string;
   meUserId: string;
   players: PlayerLite[];
-  state: OnlineState; // live via room_state subscription in page
+  state: OnlineState;
 };
 
 export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, state }: Props) {
   const [mySecret, setMySecret] = useState<{ secret: string; hint: string; theme: string } | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [readyUsers, setReadyUsers] = useState<string[]>([]); // ✅ Track who has clicked next
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const iAmHost = useMemo(
@@ -38,18 +37,16 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
   const turnUserId = state.order?.[state.revealIndex ?? 0] ?? null;
   const isMyTurn = state.phase === 'reveal' && turnUserId === meUserId;
 
-  // Map for quick lookup
   const playerById = useMemo(() => {
     const m = new Map<string, PlayerLite>();
     players.forEach((p) => m.set(p.user_id, p));
     return m;
   }, [players]);
 
-  // Starter-first order for play phase
   const playOrder = useMemo(() => {
     const base = state.order ?? [];
     if (base.length === 0) return [];
-    if (!state.starter) return base; // fallback: show original order
+    if (!state.starter) return base;
     const idx = base.indexOf(state.starter);
     if (idx === -1) return base;
     return [...base.slice(idx), ...base.slice(0, idx)];
@@ -76,9 +73,13 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
     channelRef.current = ch;
 
     ch.on('broadcast', { event: 'reveal_ready' }, async (payload) => {
+      const readyUserId = payload?.payload?.user_id as string | undefined;
+      if (readyUserId) {
+        setReadyUsers((prev) => (prev.includes(readyUserId) ? prev : [...prev, readyUserId]));
+      }
+
       if (!iAmHost || state.phase !== 'reveal') return;
 
-      const readyUserId = payload?.payload?.user_id as string | undefined;
       const idx = (state.order ?? []).indexOf(readyUserId ?? '');
       if (idx !== (state.revealIndex ?? -1)) return;
 
@@ -109,7 +110,6 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
       if (channelRef.current) supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, iAmHost, state]);
 
   const sendReady = async () => {
@@ -119,10 +119,10 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
       event: 'reveal_ready',
       payload: { user_id: meUserId, at: Date.now() },
     });
+    setReadyUsers((prev) => (prev.includes(meUserId) ? prev : [...prev, meUserId]));
   };
 
   const endGame = async () => {
-    // host only
     const { error } = await supabase.rpc('end_game', { room_code: roomCode.toUpperCase() });
     if (error) alert(error.message || 'Failed to end game');
   };
@@ -148,7 +148,9 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
                   <div className="text-2xl font-bold mt-1">{mySecret.secret}</div>
                 ) : (
                   <>
-                    <div className="text-xs uppercase tracking-wide text-gray-500">Imposter</div>
+                    <div className="imposter-label" role="alert">
+                      Imposter
+                    </div>
                     {mySecret?.hint ? (
                       <div className="text-sm text-gray-700 mt-1">Hint: {mySecret.hint}</div>
                     ) : (
@@ -178,12 +180,16 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
           {(state.order ?? []).map((uid, i) => {
             const p = playerById.get(uid);
             const isNow = i === (state.revealIndex ?? 0);
+            const isReady = readyUsers.includes(uid);
             return (
               <li
                 key={uid}
-                className={`px-3 py-2 rounded shadow ${isNow ? 'bg-black text-white' : 'bg-white'}`}
+                className={`px-3 py-2 rounded shadow flex items-center justify-between ${
+                  isNow ? 'bg-black text-white' : 'bg-white'
+                }`}
               >
-                {p?.name ?? 'Player'}
+                <span>{p?.name ?? 'Player'}</span>
+                {isReady && <span className="ready-tick">✓</span>}
               </li>
             );
           })}
@@ -202,7 +208,6 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
           Starting player: <b>{starterName}</b>
         </p>
 
-        {/* Turn order list (starter first, then clockwise) */}
         <ul className="mt-2 space-y-2 max-w-sm mx-auto text-left">
           {playOrder.map((uid, idx) => {
             const p = playerById.get(uid);
@@ -214,17 +219,14 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
                 }`}
               >
                 <span className="font-medium">{p?.name ?? 'Player'}</span>
-                {idx === 0 && <span className="ml-2 text-xs opacity-80"></span>}
               </li>
             );
           })}
         </ul>
 
-        {/* Host-only End Game button during play */}
         {iAmHost && (
           <div className="mt-3">
-            <button 
-              className="end-game-button" onClick={endGame}>
+            <button className="end-game-button" onClick={endGame}>
               End Game
             </button>
           </div>
@@ -239,4 +241,3 @@ export default function OnlinePlayScreen({ roomId, roomCode, meUserId, players, 
     </div>
   );
 }
-
