@@ -59,7 +59,7 @@ const setStoredName = (name: string) => {
   } catch {}
 };
 
-// ---- Lightweight inline modal for name capture/change ----
+// ---- Lightweight inline modal for name capture/change (styled via global.css) ----
 function NameModal({
   initial,
   onSubmit,
@@ -81,7 +81,6 @@ function NameModal({
       if ((e.key === 'Enter' || e.key === 'NumpadEnter') && canSave) onSubmit(name.trim());
     };
     document.addEventListener('keydown', onKey);
-    // Prevent background scroll while open
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -92,107 +91,47 @@ function NameModal({
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        zIndex: 50,
-      }}
+      className="modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onClick={(e) => {
-        // click backdrop to close if onClose provided
         if (e.target === e.currentTarget && onClose) onClose();
       }}
     >
-      <div
-        style={{
-          backgroundColor: '#f1ededff',
-          borderRadius: '12px',
-          maxWidth: '28rem',
-          width: '100%',
-          maxHeight: '80vh',
-          overflowY: 'auto',
-        }}
-      >
-        <div style={{ padding: '1.5rem' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '1.5rem',
-            }}
-          >
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b' }}>{title}</h3>
+      <div className="modal-card">
+        <div className="modal-content">
+          {/* Header */}
+          <div className="modal-header">
+            <h3 className="modal-title">{title}</h3>
             {onClose && (
-              <button
-                onClick={onClose}
-                style={{
-                  color: '#000000ff',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '1.5rem',
-                  lineHeight: 1,
-                }}
-                aria-label="Close"
-              >
+              <button className="modal-close" onClick={onClose} aria-label="Close">
                 ×
               </button>
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Alex"
-              maxLength={30}
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '2px solid #000000ff',
-                borderRadius: '0.375rem',
-                outline: 'none',
-              }}
-            />
-          </div>
+          {/* Input */}
+          <input
+            className="modal-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Alex"
+            maxLength={30}
+            autoFocus
+          />
 
-          <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+          {/* Actions */}
+          <div className="modal-actions">
             {onClose && (
-              <button
-                onClick={onClose}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  backgroundColor: 'transparent',
-                  border: '1px solid #000',
-                  borderRadius: '0.375rem',
-                  cursor: 'pointer',
-                }}
-              >
+              <button className="modal-cancel-button" onClick={onClose}>
                 Cancel
               </button>
             )}
             <button
+              className="modal-save-button"
               onClick={() => onSubmit(name.trim())}
               disabled={!canSave}
-              style={{
-                padding: '0.5rem 0.75rem',
-                backgroundColor: '#1f1313ff',
-                color: 'white',
-                borderRadius: '0.375rem',
-                border: 'none',
-                cursor: canSave ? 'pointer' : 'not-allowed',
-                opacity: canSave ? 1 : 0.6,
-                fontWeight: 500,
-              }}
             >
               Save
             </button>
@@ -202,7 +141,6 @@ function NameModal({
     </div>
   );
 }
-
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
@@ -231,6 +169,11 @@ export default function RoomPage() {
   // name modal state
   const [showNameModal, setShowNameModal] = useState(false);
   const [editingName, setEditingName] = useState(false);
+
+  // ---- single source of truth for player ordering ----
+  const sortPlayers = useCallback((arr: Player[]) => {
+    return [...arr].sort((a, b) => a.id.localeCompare(b.id));
+  }, []);
 
   // --- AUTH FIRST (RLS requires it)
   useEffect(() => {
@@ -297,14 +240,14 @@ export default function RoomPage() {
       // CRITICAL: ensure I'm a member BEFORE selecting players (so RLS will allow seeing others)
       await ensureSelfMembership(room.id);
 
-      // Now load players and state
+      // Now load players and state (ordered + sorted)
       const { data: list } = await supabase
         .from('room_players')
         .select('id, name, is_host, user_id, room_id')
         .eq('room_id', room.id)
         .order('id', { ascending: true });
 
-      setPlayers(list || []);
+      setPlayers(sortPlayers(list || []));
 
       const { data: st } = await supabase
         .from('room_state')
@@ -326,7 +269,7 @@ export default function RoomPage() {
       const meRow = (list || []).find((p) => p.user_id === meUserId);
       if (meRow && !getStoredName()) setStoredName(meRow.name);
     })();
-  }, [meUserId, code, router, ensureSelfMembership]);
+  }, [meUserId, code, router, ensureSelfMembership, sortPlayers]);
 
   // --- Realtime subscriptions (rooms, room_players, room_state)
   useEffect(() => {
@@ -347,7 +290,7 @@ export default function RoomPage() {
             const p = payload.new as Player;
             if (prev.some((x) => x.id === p.id)) return prev;
             if (p.user_id === meUserId && !getStoredName()) setStoredName(p.name);
-            return [...prev, p];
+            return sortPlayers([...prev, p]);
           })
       )
       .on(
@@ -361,13 +304,13 @@ export default function RoomPage() {
             const next = prev.slice();
             next[idx] = p;
             if (p.user_id === meUserId) setStoredName(p.name);
-            return next;
+            return sortPlayers(next);
           })
       )
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'room_players', filter: `room_id=eq.${roomId}` },
-        (payload: any) => setPlayers((prev) => prev.filter((x) => x.id !== (payload.old as Player).id))
+        (payload: any) => setPlayers((prev) => sortPlayers(prev.filter((x) => x.id !== (payload.old as Player).id)))
       )
       .on(
         'postgres_changes',
@@ -404,7 +347,7 @@ export default function RoomPage() {
     return () => {
       supabase.removeChannel(db);
     };
-  }, [roomId, meUserId]);
+  }, [roomId, meUserId, sortPlayers]);
 
   const iAmHost = useMemo(() => {
     if (!meUserId) return false;
@@ -416,7 +359,7 @@ export default function RoomPage() {
     [players, meUserId]
   );
 
-  // --- Leave room helper (only for true navigations/close) ---
+  // --- Leave room helper (manual via button) ---
   const leaveRoom = useCallback(async () => {
     if (!roomId || !meUserId) return;
     try {
@@ -452,32 +395,21 @@ export default function RoomPage() {
       });
   }, [roomId, meUserId]);
 
-  // Unload / visibility listeners (no cleanup calling leaveRoom to avoid accidental self-delete)
+  // Presence/visibility only (no deleting on refresh)
   useEffect(() => {
     if (!roomId || !meUserId) return;
 
-    const handleBeforeUnload = () => { void leaveRoom(); };
-    const handlePageHide = (ev: Event) => {
-      const persisted = (ev as any).persisted === true; // bfcache case
-      if (persisted) return;
-      void leaveRoom();
-    };
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         void ensureMembershipOnReturn();
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handlePageHide as any);
     document.addEventListener('visibilitychange', handleVisibility);
-
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handlePageHide as any);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [roomId, meUserId, leaveRoom, ensureMembershipOnReturn]);
+  }, [roomId, meUserId, ensureMembershipOnReturn]);
 
   // --- Host pushes setup changes into room_state
   const updateRoomState = useCallback(
@@ -687,7 +619,6 @@ export default function RoomPage() {
                     <span style={{ color: '#000', fontWeight: 550 }}>
                       {p.name}
                       {p.is_host ? ' (Host)' : ''}
-                      {mine ? '' : ''}
                     </span>
                   </div>
                 </button>
@@ -806,12 +737,13 @@ export default function RoomPage() {
                   is_host: false,
                 });
               }
-              // fetch players after joining to populate everyone (RLS)
+              // fetch players after joining to populate everyone (RLS) — always ordered + sorted
               const { data: list } = await supabase
                 .from('room_players')
                 .select('id, name, is_host, user_id, room_id')
-                .eq('room_id', roomId);
-              setPlayers(list || []);
+                .eq('room_id', roomId)
+                .order('id', { ascending: true });
+              setPlayers(sortPlayers(list || []));
             }
             setShowNameModal(false);
             setEditingName(false);
